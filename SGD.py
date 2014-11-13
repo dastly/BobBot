@@ -62,7 +62,7 @@ def learnPredictor(trainExamples, testExamples, featureExtractor):
                 coef = -1
             increment(weight, -1*stepSize*coef*y,phi)
         def predictor(x):
-            if dotProduct(weight, featureExtractor(x)) < 0:
+            if dotProduct(weight, featureExtractor(x)) <= 0:
                 return -1
             else:
                 return 1
