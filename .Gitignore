@@ -1,0 +1,4 @@
+*.pyc
+swda/
+__MACOSX
+__pycache__/SGD.cpython-34.pyc

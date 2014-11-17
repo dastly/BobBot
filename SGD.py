@@ -48,7 +48,7 @@ def learnPredictor(trainExamples, testExamples, featureExtractor):
     '''
     weight = {}  # feature => weight
     # BEGIN_YOUR_CODE (around 15 lines of code expected)
-    numIters = 15
+    numIters = 30
     stepSize = .05
     for k in range(numIters):
         for example in trainExamples:
@@ -68,7 +68,8 @@ def learnPredictor(trainExamples, testExamples, featureExtractor):
                 return 1
         trainError = evaluatePredictor(trainExamples, predictor)
         devError = evaluatePredictor(testExamples, predictor)
-        print("Step %d: train error = %s, test error = %s \\\\" % (k + 1, trainError, devError))
+        print ("Step %d: train error = %s, test error = %s \\\\" % (k + 1, trainError, devError))
+        # print "Step %d: train error = %s, test error = %s \\\\" % (k + 1, trainError, devError)
     # END_YOUR_CODE
     return weight
 

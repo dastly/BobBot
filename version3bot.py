@@ -1,52 +1,27 @@
-##from swda import Transcript
-##trans = Transcript('swda/sw00utt/sw_0001_4325.utt.csv', 'swda/swda-metadata.csv')
-##print trans
-
 #!/usr/bin/python
 # Filename: bot.py
 
-import swda
-from swda import Transcript
-from swda import CorpusReader
 import SGD
 import random
 import collections
 import math
 import sys
+import nltk
+from nltk.corpus import switchboard
+from nltk.corpus import nps_chat
 from SGD import learnPredictor
 from util import dotProduct
+
+##print(switchboard.discourses()[0])
 
 def sampleFeatureExtractor(x):
     phi = dict()
     turnA = x[0]
     turnB = x[1]
-    tagA = turnA[len(turnA)-1].act_tag
-    tagB = turnB[0].act_tag
-    phi[tagA + ", " + tagB] = 1
-    if len(turnA) + len(turnB) < 4:
-        phi["Short"] = 1
     return phi
 
 def runBot():
     
-   
-    def processUtterances(transcript):
-        turns = []
-        turn = []
-        utterances = transcript.utterances
-        for utterance in utterances:
-            if len(turn) == 0:
-                turn.append(utterance)
-            else:
-                if turn[0].caller == utterance.caller:
-                    turn.append(utterance)
-                else:
-                    turns.append(turn)
-                    turn = []
-                    turn.append(utterance)
-        turns.append(turn)
-        return turns
-
     def getPosExamples(turns):
         posExamples = []
         for i in range(1, len(turns)):
@@ -57,13 +32,12 @@ def runBot():
         negExamples = []
         for i in range(1, len(turns)):
             randomInt = random.randint(0, len(turns) - 1)
-            while turns[i-1][0].caller == turns[randomInt][0].caller:
+            while turns[i-1].speaker == turns[randomInt].speaker:
                 randomInt = random.randint(0, len(turns) - 1)
             negExamples.append(((turns[i-1], turns[randomInt]), -1))
         return negExamples
 
-    #number of transcripts
-    TRAIN_SET_SIZE = 1000
+    TRAIN_SET_SIZE = 10
     TEST_SET_SIZE = 10
     random.seed(5)
     
@@ -76,8 +50,7 @@ def runBot():
     testExamplesNegList = []
 
     count = 0
-    for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
-        turns = processUtterances(transcript)
+    for turns in switchboard.discourses():
         if count < TRAIN_SET_SIZE:
             trainExamplesPos = getPosExamples(turns)   
             trainExamplesNeg = getNegExamples(turns)
@@ -96,29 +69,8 @@ def runBot():
             count = count + 1
         else:
             break
-    
+    """
     weights = learnPredictor(trainExamples, testExamples, sampleFeatureExtractor)
-
-    for example in testExamples:
-        print example[1]
-        phi = sampleFeatureExtractor(example[0])
-        print phi
-        for key in phi:
-            print key
-            print weights[key]
-        score = dotProduct(weights, phi)
-        if score < -.5 and example[1] == -1:
-            print "FOUND"
-            print "Prompt"
-            for utt in example[0][0]:
-                print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
-            print "Response"
-            for utt in example[0][1]:
-                print utt.text_words();
-            print example[0][1][0].act_tag
-            break
-    
 
     def guessEval(examples):
         correct = 0
@@ -155,97 +107,69 @@ def runBot():
             if(guess1 > guess2):
                 correct = correct + 1
             if(guess2 == guess1):
-                correct = correct + .5 
+                correct = correct + .5
         return 1.0 * correct / len(examples)
     summ = 0
     for trainExamplesPos in trainExamplesPosList:
         summ = summ + guessEval(trainExamplesPos)
-    print "Train Guessing"
-    print 1.0 * summ/len(trainExamplesPosList)
+    print("Train Guessing")
+    print(1.0 * summ/len(trainExamplesPosList))
     summ = 0
     for testExamplesPos in testExamplesPosList:
         summ = summ + guessEval(testExamplesPos)
-    print "Test Guessing"
-    print 1.0 * summ/len(testExamplesPosList)
+    print("Test Guessing")
+    print(1.0 * summ/len(testExamplesPosList))
     summ = 0
     for trainExamplesPos in trainExamplesPosList:
         summ = summ + chooseEval(trainExamplesPos)
-    print "Train Choosing"
-    print 1.0 * summ/len(trainExamplesPosList)
+    print("Train Choosing")
+    print(1.0 * summ/len(trainExamplesPosList))
     summ = 0
     for testExamplesPos in testExamplesPosList:
         summ = summ + chooseEval(testExamplesPos)
-    print "Test Choosing"
-    print 1.0 * summ/len(testExamplesPosList)
-    
-    def humanScore():
-        humanTestList = []
-        humanTestList.extend(trainExamplesPosList[5])
-        humanTestList.extend(trainExamplesNegList[4])
-        random.shuffle(humanTestList)
-        print "NUM EXAMPLES"
-        print len(humanTestList)
-        yourCorrect = 0
-        soFar = 0
-        for example in humanTestList:
-            soFar = soFar + 1
-            print soFar
-            print "A"
-            for utt in example[0][0]:
-                print utt.text_words();
-            print "B"
-            for utt in example[0][1]:
-                print utt.text_words();
-            user_input = raw_input("Score: ")
-            if int(user_input) == example[1]:
-                print "Correct!"
-                yourCorrect = yourCorrect + 1
-            else:
-                print "Incorrect."
-            print "Your score:"
-            print 1.0*yourCorrect/soFar
-
+    print("Test Choosing")
+    print(1.0 * summ/len(testExamplesPosList))
+    """
     def humanChoice():
         humanTestList = []
-        humanTestList.extend(trainExamplesPosList[10])
+        humanTestList.extend(trainExamplesPosList[5])
         random.shuffle(humanTestList)
-        print "NUM EXAMPLES"
-        print len(humanTestList)
+        print("NUM EXAMPLES")
+        print(len(humanTestList))
         yourCorrect = 0
         soFar = 0
         for example in humanTestList:
             soFar = soFar + 1
             prompt = example[0][0]
-            response1 = example[0][1]
+            responseT1 = example[0][1]
+            response1 = repr(responseT1)
+            response1 = response1[response1.find(":"):]
             randomInt = random.randint(0, len(humanTestList)-1)
-            response2 = humanTestList[randomInt][0][1]
-            print soFar
-            print "Prompt"
-            for utt in prompt:
-                print utt.text_words();
+            responseT2 = humanTestList[randomInt][0][1]
+            response2 = repr(responseT2)
+            response2 = response2[response2.find(":"):]
+            print(soFar)
+            print("Prompt")
+            print(prompt)
             randomInt =random.randint(1,2)
             if randomInt == 1:
-                print "Response 1"
-                for utt in response1:
-                    print utt.text_words();
-                print "Response 2"
-                for utt in response2:
-                    print utt.text_words();
+                print("Response 1")
+                print(response1)
+                print("Response 2")
+                print(response2)
             else:
-                print "Response 1"
-                for utt in response2:
-                    print utt.text_words();
-                print "Response 2"
-                for utt in response1:
-                    print utt.text_words();
-            user_input = raw_input("Response: ")
+                print("Response 1")
+                print(response2)
+                print("Response 2")
+                print(response1)
+            user_input = input("Response: ")
             if int(user_input) == randomInt:
-                print "Correct!"
+                print("Correct!")
                 yourCorrect = yourCorrect + 1
             else:
-                print "Incorrect."
-            print "Your score:"
-            print 1.0*yourCorrect/soFar
+                print("Incorrect.")
+            print("Your score:")
+            print(1.0*yourCorrect/soFar)
     humanChoice()
-
+        
 runBot()
