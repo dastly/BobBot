@@ -26,7 +26,6 @@ import os
 import sys
 import csv
 import re
-
 import dateutil.parser
 from glob import iglob
 from nltk.tree import Tree
@@ -63,13 +62,11 @@ class Metadata:
         appropriate).
         """        
         csvreader = csv.reader(open(self.metadata_filename))
-
         header = csvreader.next()
         for row in csvreader:
             d = dict(zip(header, row))
             for key in ('conversation_no', 'length', 'from_caller_education', 'to_caller_education'):
                 d[key] = int(d[key])
-
             for key in ('talk_day', 'from_caller_birth_year', 'to_caller_birth_year'):
                 d[key] = dateutil.parser.parse(d[key])
             self.metadata[d['conversation_no']] = d
@@ -227,8 +224,7 @@ class Utterance:
             if i < len(row):                
                 row_value = row[i].strip()
             # Special handling of non-string values.
-
-            if att_name == "trees":
+           if att_name == "trees":
                 fn = lambda x: Tree(x, [])
                 if row_value: row_value = map(fn, row_value.split("|||"))
                 else: row_value = []
