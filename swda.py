@@ -224,7 +224,7 @@ class Utterance:
             if i < len(row):                
                 row_value = row[i].strip()
             # Special handling of non-string values.
-           if att_name == "trees":
+            if att_name == "trees":
                 fn = lambda x: Tree(x, [])
                 if row_value: row_value = map(fn, row_value.split("|||"))
                 else: row_value = []
@@ -423,4 +423,5 @@ class Utterance:
 
 if __name__ == '__main__':
     pass
+
 
