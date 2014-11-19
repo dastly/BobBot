@@ -15,6 +15,7 @@ import math
 import sys
 from SGD import learnPredictor
 from util import dotProduct
+from features import swda_feature_extractor
 
 def guessEval(examples):
     correct = 0
@@ -25,7 +26,7 @@ def guessEval(examples):
         for j in range(len(examples)):
             response = examples[j][0][1]
             guess = (prompt, response)
-            phi = sampleFeatureExtractor(guess)
+            phi = swda_feature_extractor(guess)
             score = dotProduct(weights, phi)
             if score > maxScore:
                 maxScore = score
@@ -33,18 +34,6 @@ def guessEval(examples):
         if maxResponse == examples[i][0][1]:
             correct = correct + 1
     return 1.0 * correct / len(examples)
-
-def sampleFeatureExtractor(x):
-    phi = dict()
-    turnA = x[0]
-    turnB = x[1]
-    tagA = turnA[len(turnA)-1].act_tag
-    tagB = turnB[0].act_tag
-    phi[tagA + ", " + tagB] = 1
-    if len(turnA) + len(turnB) < 4:
-        phi["Short"] = 1
-    return phi
-
 
 def processUtterances(transcript):
     turns = []
@@ -113,11 +102,11 @@ def chooseEval(examples):
         randomInt = random.randint(0, len(examples)-1)
         response2 = examples[randomInt][0][1]
         guess1 = (prompt, response1)
-        phi1 = sampleFeatureExtractor(guess1)
+        phi1 = swda_feature_extractor(guess1)
         score1 = dotProduct(weights, phi1)
 
         guess2 = (prompt, response2)
-        phi2 = sampleFeatureExtractor(guess2)
+        phi2 = swda_feature_extractor(guess2)
         score2 = dotProduct(weights, phi2)
         if(guess1 > guess2):
             correct = correct + 1
@@ -206,11 +195,11 @@ def runBot():
         else:
             break
     
-    weights = learnPredictor(trainExamples, testExamples, sampleFeatureExtractor)
+    weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
 
     for example in testExamples:
         print example[1]
-        phi = sampleFeatureExtractor(example[0])
+        phi = swda_feature_extractor(example[0])
         print phi
         for key in phi:
             print key
