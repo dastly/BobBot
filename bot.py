@@ -17,6 +17,8 @@ from SGD import learnPredictor
 from util import dotProduct
 from features import swda_feature_extractor
 
+weights = None
+
 def guessEval(examples):
     correct = 0
     for i in range(len(examples)):
