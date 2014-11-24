@@ -1,5 +1,5 @@
 import sys
-import pdb
+from nltk.tree import Tree
 
 def swda_feature_extractor(x):
     phi = dict()
@@ -17,7 +17,9 @@ def swda_feature_extractor(x):
         # B_is_yes_no_response,
         # contains_question,
         # contains_stmt,
-        # contains_acknowledge
+        # contains_acknowledge,
+        A_add_subjects,
+        B_add_subjects
     ]
     mod = sys.modules[__name__]
     fn = lambda x : phi.update(x(turnA, turnB))
@@ -53,6 +55,14 @@ def create_pair_feature(fn_names, turnA, turnB):
     if call_feature(feature1) and call_feature(feature2):
         return {key : 1}
     return {}
+
+######### TREE FEATURES ################
+
+def A_add_subjects(turnA, turnB, return_flag=False):
+    return add_subjects(turnA, 'A')
+
+def B_add_subjects(turnA, turnB, return_flag=False):
+    return add_subjects(turnB, 'B')
 
 ######### A ONLY FEATURES ################
 
@@ -144,7 +154,7 @@ def contains_acknowledge(turnA, turnB):
 def contains_stmt(turnA, turnB):
     return both_contain_something(turnA, turnB, is_stmt, "both_contain_stmt")
 
-############ HELPERS #################
+############ ACT TAG HELPERS #################
 
 def first_is(turn, fn, key, return_flag):
     return check_specific(turn, 0, fn, key, return_flag)
@@ -288,3 +298,37 @@ def is_downplayer(utt):
 
 
 """
+
+########### TREE HELPERS #############
+
+def is_none(label):
+    return label == "-NONE-"
+
+def add_subjects(turn, order):
+    weights = dict()
+    weights_fn = lambda subj: weights.update({"{0}-subject={1}".format(order, subj) : 1})
+    get_subjects_fn = lambda utt: map(weights_fn, get_subjects(utt))
+    map(get_subjects_fn, turn)
+    return weights
+
+def get_subjects(utt):
+    if not utt.tree_is_perfect_match():
+        return []
+    tree = Tree.fromstring(utt.trees[0].pprint())
+    subj_phrases = []
+    for sub in tree.subtrees():
+        if 'SBJ' in sub.label():
+            subj_phrases.append(sub)
+    subj_nodes = []
+    for node in subj_phrases:
+        child = None
+        for sub in node.subtrees():
+            if sub.subtrees().next().height() == 2:
+                child = sub
+                break
+        subj_nodes.append(child)
+    
+    subj_nodes = [node for node in subj_nodes if not is_none(node.label())]
+    subj_labels = [node.leaves()[0] for node in subj_nodes if len(node.leaves()) == 1]
+    return subj_labels
+    
