@@ -16,10 +16,12 @@ import sys
 from SGD import learnPredictor
 from util import dotProduct
 from features import swda_feature_extractor
+import pdb
 
-weights = None
+weights = trainExamplesPosList = testExamplesPosList = None
 
 def guessEval(examples):
+    global weights
     correct = 0
     for i in range(len(examples)):
         prompt = examples[i][0][0]
@@ -118,6 +120,7 @@ def chooseEval(examples):
 
 
 def humanChoice():
+    global trainExamplesPosList
     humanTestList = []
     humanTestList.extend(trainExamplesPosList[10])
     random.shuffle(humanTestList)
@@ -161,6 +164,8 @@ def humanChoice():
 
     
 def runBot():
+
+    global weights, trainExamplesPosList, testExamplesPosList
     
     #number of transcripts
     TRAIN_SET_SIZE = 1000
