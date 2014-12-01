@@ -12,13 +12,17 @@ import SGD
 import random
 import collections
 import math
-import sys
+import sys, getopt
 from SGD import learnPredictor
 from util import dotProduct
 from features import swda_feature_extractor
-import pdb
+import parse_xml as parse
 
 weights = trainExamplesPosList = testExamplesPosList = None
+#number of transcripts
+TRAIN_SET_SIZE = 20
+TEST_SET_SIZE = 20
+random.seed(5)
 
 def guessEval(examples):
     global weights
@@ -62,7 +66,7 @@ def getPosExamples(turns):
         posExamples.append(((turns[i-1], turns[i]), 1))
     return posExamples
 
-def getNegExamples(turns):
+def getNegExamplesSwitchboard(turns):
     negExamples = []
     for i in range(1, len(turns)):
         randomInt = random.randint(0, len(turns) - 1)
@@ -162,16 +166,19 @@ def humanChoice():
         print "Your score:"
         print 1.0*yourCorrect/soFar
 
-    
-def runBot():
+def get_transcripts(use_subtitles):
+    if use_subtitles:
+        for movie in parse.tag_all_movies():
+            yield movie
+    else:
+        for transcript in CorpusReader('swda').iter_transcripts(display_progress=True):
+            yield transcript
+
+            
+def runBot(use_subtitles):
 
     global weights, trainExamplesPosList, testExamplesPosList
-    
-    #number of transcripts
-    TRAIN_SET_SIZE = 1000
-    TEST_SET_SIZE = 10
-    random.seed(5)
-    
+        
     trainExamples = []
     trainExamplesPosList = []
     trainExamplesNegList = []
@@ -181,11 +188,21 @@ def runBot():
     testExamplesNegList = []
 
     count = 0
-    for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
-        turns = processUtterances(transcript)
+
+    if use_subtitles:
+        getNegExamplesFn = getNegExamplesSubtitles
+        featureExtractor = subtitles_feature_extractor
+        processFn = lambda x : x
+    else:
+        getNegExamplesFn = getNegExamplesSwitchboard
+        featureExtractor = swda_feature_extractor
+        processFn = processUtterances
+
+    for transcript in get_transcripts(use_subtitles):
+        turns = processFn(transcript)
         if count < TRAIN_SET_SIZE:
             trainExamplesPos = getPosExamples(turns)   
-            trainExamplesNeg = getNegExamples(turns)
+            trainExamplesNeg = getNegExamplesFn(turns)
             trainExamplesPosList.append(trainExamplesPos)
             trainExamplesNegList.append(trainExamplesNeg)
             trainExamples.extend(trainExamplesPos)
@@ -193,7 +210,7 @@ def runBot():
             count = count + 1
         elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
             testExamplesPos = getPosExamples(turns)   
-            testExamplesNeg = getNegExamples(turns)
+            testExamplesNeg = getNegExamplesFn(turns)
             testExamplesPosList.append(testExamplesPos)
             testExamplesNegList.append(testExamplesNeg)
             testExamples.extend(trainExamplesPos)
@@ -201,8 +218,8 @@ def runBot():
             count = count + 1
         else:
             break
-    
-    weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
+
+    weights = learnPredictor(trainExamples, testExamples, featureExtractor)
 
     for example in testExamples:
         print example[1]
@@ -213,15 +230,15 @@ def runBot():
             print weights[key]
         score = dotProduct(weights, phi)
         if score < -.5 and example[1] == -1:
-            print "FOUND"
-            print "Prompt"
-            for utt in example[0][0]:
-                print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
-            print "Response"
-            for utt in example[0][1]:
-                print utt.text_words();
-            print example[0][1][0].act_tag
+            # print "FOUND"
+            # print "Prompt"
+            # for utt in example[0][0]:
+            #     print utt.text_words();
+            # print example[0][0][len(example[0][0])-1].act_tag
+            # print "Response"
+            # for utt in example[0][1]:
+            #     print utt.text_words();
+            # print example[0][1][0].act_tag
             break
 
     summ = 0
@@ -247,5 +264,26 @@ def runBot():
         
     humanChoice()
 
+    
+def usage():
+    print 'Usage: python bot.py [-p] [--phone] [-s] [--subtitles]'
+    print '-p OR --phone = to train with the Switchboard phone conversation corpus'
+    print '-s OR --subtitles = to train with the open subtitles corpus'
+
 if __name__ == "__main__":
-    runBot()
+    if len(sys.argv) != 2:
+        usage()
+        sys.exit(2)
+    try:
+        argv = sys.argv[1:]
+        opts, args = getopt.getopt(argv, "ps", ["subtitles", "phone"])
+        use_subtitles = None
+        for opt, arg in opts:
+            if opt in ('-p', '--phone'):
+                use_subtitles = False
+            if opt in ('-s', '--subtitles'):
+                use_subtitles = True
+        runBot(use_subtitles)
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
