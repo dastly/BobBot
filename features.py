@@ -1,6 +1,10 @@
 import sys
 from nltk.tree import Tree
 
+def baseline_feature_extractor(x):
+    phi = dict()
+    return phi
+
 def swda_feature_extractor(x):
     phi = dict()
     turnA = x[0]

@@ -34,17 +34,17 @@ def increment(d1, scale, d2):
 ##    print('Read %d examples from %s' % (len(examples), path))
 ##    return examples
 
-def evaluatePredictor(examples, predictor):
-    '''
-    predictor: a function that takes an x and returns a predicted y.
-    Given a list of examples (x, y), makes predictions based on |predict| and returns the fraction
-    of misclassiied examples.
-    '''
-    error = 0
-    for x, y in examples:
-        if predictor(x) != y:
-            error += 1
-    return 1.0 * error / len(examples)
+##def evaluatePredictor(examples, predictor):
+##    '''
+##    predictor: a function that takes an x and returns a predicted y.
+##    Given a list of examples (x, y), makes predictions based on |predict| and returns the fraction
+##    of misclassiied examples.
+##    '''
+##    error = 0
+##    for x, y in examples:
+##        if predictor(x) != y:
+##            error += 1
+##    return 1.0 * error / len(examples)
 
 ##def outputWeights(weights, path):
 ##    print("%d weights" % len(weights))

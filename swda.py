@@ -26,7 +26,7 @@ import os
 import sys
 import csv
 import re
-import dateutil.parser
+# import dateutil.parser
 from glob import iglob
 from nltk.tree import Tree
 from nltk.stem import WordNetLemmatizer
@@ -67,8 +67,8 @@ class Metadata:
             d = dict(zip(header, row))
             for key in ('conversation_no', 'length', 'from_caller_education', 'to_caller_education'):
                 d[key] = int(d[key])
-            for key in ('talk_day', 'from_caller_birth_year', 'to_caller_birth_year'):
-                d[key] = dateutil.parser.parse(d[key])
+            # for key in ('talk_day', 'from_caller_birth_year', 'to_caller_birth_year'):
+            #     d[key] = dateutil.parser.parse(d[key])
             self.metadata[d['conversation_no']] = d
 
     def __getitem__(self, val):

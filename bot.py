@@ -16,7 +16,9 @@ import sys
 from SGD import learnPredictor
 from util import dotProduct
 from features import swda_feature_extractor
+from features import baseline_feature_extractor
 import pdb
+from bot_utils import *
 
 weights = trainExamplesPosList = testExamplesPosList = None
 
@@ -38,43 +40,11 @@ def guessEval(examples):
         if maxResponse == examples[i][0][1]:
             correct = correct + 1
     return 1.0 * correct / len(examples)
-
-def processUtterances(transcript):
-    turns = []
-    turn = []
-    utterances = transcript.utterances
-    for utterance in utterances:
-        if len(turn) == 0:
-            turn.append(utterance)
-        else:
-            if turn[0].caller == utterance.caller:
-                turn.append(utterance)
-            else:
-                turns.append(turn)
-                turn = []
-                turn.append(utterance)
-    turns.append(turn)
-    return turns
         
-def getPosExamples(turns):
-    posExamples = []
-    for i in range(1, len(turns)):
-        posExamples.append(((turns[i-1], turns[i]), 1))
-    return posExamples
-
-def getNegExamples(turns):
-    negExamples = []
-    for i in range(1, len(turns)):
-        randomInt = random.randint(0, len(turns) - 1)
-        while turns[i-1][0].caller == turns[randomInt][0].caller:
-            randomInt = random.randint(0, len(turns) - 1)
-        negExamples.append(((turns[i-1], turns[randomInt]), -1))
-    return negExamples
-
 def humanScore():
     humanTestList = []
     humanTestList.extend(trainExamplesPosList[5])
-    humanTestList.extend(trainExamplesNegList[4])
+    humanTestList.extend(trainExamplesNegList[5])
     random.shuffle(humanTestList)
     print "NUM EXAMPLES"
     print len(humanTestList)
@@ -105,16 +75,19 @@ def chooseEval(examples):
         response1 = examples[i][0][1]
         randomInt = random.randint(0, len(examples)-1)
         response2 = examples[randomInt][0][1]
+        while response1 == response2:
+            randomInt = random.randint(0, len(examples)-1)
+            response2 = examples[randomInt][0][1]
         guess1 = (prompt, response1)
         phi1 = swda_feature_extractor(guess1)
         score1 = dotProduct(weights, phi1)
-
         guess2 = (prompt, response2)
         phi2 = swda_feature_extractor(guess2)
         score2 = dotProduct(weights, phi2)
-        if(guess1 > guess2):
+        #The following lines had guess instead of score previously!
+        if(score1 > score2):
             correct = correct + 1
-        if(guess2 == guess1):
+        if(score1 == score2):
             correct = correct + .5 
     return 1.0 * correct / len(examples)
 
@@ -180,6 +153,7 @@ def runBot():
     testExamplesPosList = []
     testExamplesNegList = []
 
+    print "Generating Examples..."
     count = 0
     for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
         turns = processUtterances(transcript)
@@ -201,51 +175,40 @@ def runBot():
             count = count + 1
         else:
             break
-    
+
+    print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
 
-    for example in testExamples:
-        print example[1]
-        phi = swda_feature_extractor(example[0])
-        print phi
-        for key in phi:
-            print key
-            print weights[key]
-        score = dotProduct(weights, phi)
-        if score < -.5 and example[1] == -1:
-            print "FOUND"
-            print "Prompt"
-            for utt in example[0][0]:
-                print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
-            print "Response"
-            for utt in example[0][1]:
-                print utt.text_words();
-            print example[0][1][0].act_tag
-            break
+    print "Finding Interesting Examples..."
+    printExamples(testExamples, weights, swda_feature_extractor)
 
-    summ = 0
-    for trainExamplesPos in trainExamplesPosList:
-        summ = summ + guessEval(trainExamplesPos)
-    print "Train Guessing"
-    print 1.0 * summ/len(trainExamplesPosList)
-    summ = 0
-    for testExamplesPos in testExamplesPosList:
-        summ = summ + guessEval(testExamplesPos)
-    print "Test Guessing"
-    print 1.0 * summ/len(testExamplesPosList)
+    print "Evaluating Bot..."
+    print "Train Choosing..."
     summ = 0
     for trainExamplesPos in trainExamplesPosList:
         summ = summ + chooseEval(trainExamplesPos)
-    print "Train Choosing"
+    print "Train Choosing Score"
     print 1.0 * summ/len(trainExamplesPosList)
+    print "Test Choosing..."
     summ = 0
     for testExamplesPos in testExamplesPosList:
         summ = summ + chooseEval(testExamplesPos)
-    print "Test Choosing"
+    print "Test Choosing Score"
     print 1.0 * summ/len(testExamplesPosList)
-        
-    humanChoice()
+    print "Train Guessing..."
+    summ = 0
+    for trainExamplesPos in trainExamplesPosList:
+        summ = summ + guessEval(trainExamplesPos)
+    print "Train Guessing Score"
+    print 1.0 * summ/len(trainExamplesPosList)
+    print "Test Guessing..."
+    summ = 0
+    for testExamplesPos in testExamplesPosList:
+        summ = summ + guessEval(testExamplesPos)
+    print "Test Guessing Score"
+    print 1.0 * summ/len(testExamplesPosList)
+    
+##    humanChoice()
 
 if __name__ == "__main__":
     runBot()
