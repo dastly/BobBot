@@ -27,6 +27,7 @@ def get_movie_sentences(filename):
 def tag_all_movies():
     files = glob.glob(XML_PATH + "*.xml")
     for filename in files:
+        print 'Parsing ', filename
         movie = get_movie_sentences(filename)
         if len(movie) == 0:
             continue

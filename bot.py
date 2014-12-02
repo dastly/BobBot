@@ -15,16 +15,21 @@ import math
 import sys, getopt
 from SGD import learnPredictor
 from util import dotProduct
-from features import swda_feature_extractor
+from swda_features import swda_feature_extractor
+from subtitles_features import subtitles_feature_extractor
 import parse_xml as parse
 
 weights = trainExamplesPosList = testExamplesPosList = None
 #number of transcripts
-TRAIN_SET_SIZE = 20
-TEST_SET_SIZE = 20
+TRAIN_SET_SIZE_SWITCHBOARD = 20
+TEST_SET_SIZE_SWITCHBOARD = 20
+
+TRAIN_SET_SIZE_SUBTITLES = 1
+TEST_SET_SIZE_SUBTITLES = 1
+
 random.seed(5)
 
-def guessEval(examples):
+def guessEval(examples, featureExtractor):
     global weights
     correct = 0
     for i in range(len(examples)):
@@ -34,7 +39,7 @@ def guessEval(examples):
         for j in range(len(examples)):
             response = examples[j][0][1]
             guess = (prompt, response)
-            phi = swda_feature_extractor(guess)
+            phi = featureExtractor(guess)
             score = dotProduct(weights, phi)
             if score > maxScore:
                 maxScore = score
@@ -66,11 +71,16 @@ def getPosExamples(turns):
         posExamples.append(((turns[i-1], turns[i]), 1))
     return posExamples
 
-def getNegExamplesSwitchboard(turns):
+def getNegExamples(turns):
+    check_speaker = False
+    if len(turns) > 0 and len(turns[0]) > 0:
+        if hasattr(turns[0][0], 'caller'):
+            check_speaker = True
+            
     negExamples = []
     for i in range(1, len(turns)):
         randomInt = random.randint(0, len(turns) - 1)
-        while turns[i-1][0].caller == turns[randomInt][0].caller:
+        while check_speaker and turns[i-1][0].caller == turns[randomInt][0].caller:
             randomInt = random.randint(0, len(turns) - 1)
         negExamples.append(((turns[i-1], turns[randomInt]), -1))
     return negExamples
@@ -102,7 +112,7 @@ def humanScore():
         print "Your score:"
         print 1.0*yourCorrect/soFar
 
-def chooseEval(examples):
+def chooseEval(examples, featureExtractor):
     correct = 0
     for i in range(len(examples)):
         prompt = examples[i][0][0]
@@ -110,11 +120,11 @@ def chooseEval(examples):
         randomInt = random.randint(0, len(examples)-1)
         response2 = examples[randomInt][0][1]
         guess1 = (prompt, response1)
-        phi1 = swda_feature_extractor(guess1)
+        phi1 = featureExtractor(guess1)
         score1 = dotProduct(weights, phi1)
 
         guess2 = (prompt, response2)
-        phi2 = swda_feature_extractor(guess2)
+        phi2 = featureExtractor(guess2)
         score2 = dotProduct(weights, phi2)
         if(guess1 > guess2):
             correct = correct + 1
@@ -122,11 +132,14 @@ def chooseEval(examples):
             correct = correct + .5 
     return 1.0 * correct / len(examples)
 
-
-def humanChoice():
+def print_response_with_utterances(response):
+    for utt in response:
+        print utt.text_words()
+    
+def humanChoice(print_response_fn):
     global trainExamplesPosList
     humanTestList = []
-    humanTestList.extend(trainExamplesPosList[10])
+    humanTestList.extend(trainExamplesPosList[0])
     random.shuffle(humanTestList)
     print "NUM EXAMPLES"
     print len(humanTestList)
@@ -140,23 +153,19 @@ def humanChoice():
         response2 = humanTestList[randomInt][0][1]
         print soFar
         print "Prompt"
-        for utt in prompt:
-            print utt.text_words();
+        print_response_fn(prompt)
         randomInt =random.randint(1,2)
         if randomInt == 1:
             print "Response 1"
-            for utt in response1:
-                print utt.text_words();
+            print_response_fn(response1)
             print "Response 2"
-            for utt in response2:
-                print utt.text_words();
+            print_response_fn(response2)
         else:
             print "Response 1"
-            for utt in response2:
-                print utt.text_words();
+            print_response_fn(response1)
             print "Response 2"
-            for utt in response1:
-                print utt.text_words();
+            print_response_fn(response2)
+
         user_input = raw_input("Response: ")
         if int(user_input) == randomInt:
             print "Correct!"
@@ -189,28 +198,33 @@ def runBot(use_subtitles):
 
     count = 0
 
+    trainSetSize = testSetSize = featureExtractor = processFn = printResponseFn = None
     if use_subtitles:
-        getNegExamplesFn = getNegExamplesSubtitles
         featureExtractor = subtitles_feature_extractor
-        processFn = lambda x : x
+        processFn = lambda x : x # does nothing / placeholder for processUtterances
+        printResponseFn = lambda resp : sys.stdout.write(reduce(lambda x, y : x + ' ' + y[0], resp, "").strip() + '\n')
+        trainSetSize = TRAIN_SET_SIZE_SUBTITLES
+        testSetSize = TEST_SET_SIZE_SUBTITLES
     else:
-        getNegExamplesFn = getNegExamplesSwitchboard
         featureExtractor = swda_feature_extractor
         processFn = processUtterances
+        printResponseFn = print_response_with_utterances
+        trainSetSize = TRAIN_SET_SIZE_SWITCHBOARD
+        testSetSize = TEST_SET_SIZE_SWITCHBOARD
 
     for transcript in get_transcripts(use_subtitles):
         turns = processFn(transcript)
-        if count < TRAIN_SET_SIZE:
+        if count < trainSetSize:
             trainExamplesPos = getPosExamples(turns)   
-            trainExamplesNeg = getNegExamplesFn(turns)
+            trainExamplesNeg = getNegExamples(turns)
             trainExamplesPosList.append(trainExamplesPos)
             trainExamplesNegList.append(trainExamplesNeg)
             trainExamples.extend(trainExamplesPos)
             trainExamples.extend(trainExamplesNeg)
             count = count + 1
-        elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
+        elif count < testSetSize + trainSetSize:
             testExamplesPos = getPosExamples(turns)   
-            testExamplesNeg = getNegExamplesFn(turns)
+            testExamplesNeg = getNegExamples(turns)
             testExamplesPosList.append(testExamplesPos)
             testExamplesNegList.append(testExamplesNeg)
             testExamples.extend(trainExamplesPos)
@@ -223,7 +237,7 @@ def runBot(use_subtitles):
 
     for example in testExamples:
         print example[1]
-        phi = swda_feature_extractor(example[0])
+        phi = featureExtractor(example[0])
         print phi
         for key in phi:
             print key
@@ -243,26 +257,26 @@ def runBot(use_subtitles):
 
     summ = 0
     for trainExamplesPos in trainExamplesPosList:
-        summ = summ + guessEval(trainExamplesPos)
+        summ = summ + guessEval(trainExamplesPos, featureExtractor)
     print "Train Guessing"
     print 1.0 * summ/len(trainExamplesPosList)
     summ = 0
     for testExamplesPos in testExamplesPosList:
-        summ = summ + guessEval(testExamplesPos)
+        summ = summ + guessEval(testExamplesPos, featureExtractor)
     print "Test Guessing"
     print 1.0 * summ/len(testExamplesPosList)
     summ = 0
     for trainExamplesPos in trainExamplesPosList:
-        summ = summ + chooseEval(trainExamplesPos)
+        summ = summ + chooseEval(trainExamplesPos, featureExtractor)
     print "Train Choosing"
     print 1.0 * summ/len(trainExamplesPosList)
     summ = 0
     for testExamplesPos in testExamplesPosList:
-        summ = summ + chooseEval(testExamplesPos)
+        summ = summ + chooseEval(testExamplesPos, featureExtractor)
     print "Test Choosing"
     print 1.0 * summ/len(testExamplesPosList)
         
-    humanChoice()
+    humanChoice(printResponseFn)
 
     
 def usage():
