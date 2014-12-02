@@ -19,6 +19,7 @@ from features import swda_feature_extractor
 from features import baseline_feature_extractor
 import pdb
 from bot_utils import *
+from actual_chat_bot import swda_chat
 
 weights = trainExamplesPosList = testExamplesPosList = None
 
@@ -178,6 +179,8 @@ def runBot():
 
     print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
+
+    swda_chat(weights, swda_feature_extractor)
 
     print "Finding Interesting Examples..."
     printExamples(testExamples, weights, swda_feature_extractor)
