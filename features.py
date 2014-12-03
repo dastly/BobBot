@@ -11,7 +11,6 @@ def swda_feature_extractor(x):
     turnA = x[0]
     turnB = x[1] # both utterances
 
-    # Note: Single features create a lot more error than pairwise features
     features_to_use = [
         act_tag, ## Without this, error is back near 50%.  With it, it is around 21%
         act_tag2, ## 
@@ -26,13 +25,21 @@ def swda_feature_extractor(x):
         utt_length3,
         utt_length4,
         utt_length5,
-        # pos_tags1,
+        # pos_tags1, # increases error by a few % points
+        # A_pos_pairs,
+        # B_pos_pairs,  # having A and B pos_pairs increased error by 13%
+ 
+        ########### CREATE A LOT OF ERROR ###########
+        
         # A_contains_yes_no_question,
         # A_contains_declarative_yn_question,
         # B_is_yes_no_response,
         # contains_question,
         # contains_stmt,
         # contains_acknowledge,
+
+        ############################################
+        
         A_add_subjects,
         B_add_subjects
     ]
@@ -82,6 +89,9 @@ def B_add_subjects(turnA, turnB, return_flag=False):
 
 ######### A ONLY FEATURES ################
 
+def A_pos_pairs(turnA, turnB):
+    return pos_pairs_helper(turnA)
+
 def A_contains_declarative_yn_question(turnA, turnB, return_flag=False):
     return contains_something(turnA, is_declarative_yn_question, "A_contains_yn_question", return_flag)
 
@@ -107,6 +117,9 @@ def A_contains_apology(turnA, turnB, return_flag=False):
     return contains_something(turnA, is_apology, "A_contains_apology", return_flag)
 
 ######### B ONLY FEATURES ###############
+
+def B_pos_pairs(turnA, turnB):
+    return pos_pairs_helper(turnB)
 
 def B_is_yes_no_response(turnA, turnB, return_flag=False):
     fn = lambda x: is_yes(x) or is_no(x)
@@ -188,7 +201,7 @@ def get_utt_length(turnA, turnB, num):
     if len(turnA) > num and len(turnB) > num:
         lengthA = len(turnA[-1 * (num+1)].text_words())
         lengthB = len(turnB[num].text_words())
-        return {"utt_length1: {0}, {1}".format(lengthA, lengthB, num) : 1} # TODO Change back
+        return {"utt_length{2}: {0}, {1}".format(lengthA, lengthB, num) : 1} # TODO Change back
     return {}
     
 def act_tag(turnA, turnB): # last of A, first of B
@@ -237,6 +250,16 @@ def contains_stmt(turnA, turnB):
     return both_contain_something(turnA, turnB, is_stmt, "both_contain_stmt")
 
 ############ ACT TAG HELPERS #################
+
+def pos_pairs_helper(turn):
+    result = {}
+    for utt in turn:
+        tupls = utt.pos_lemmas()
+        for i in range(0, len(tupls)-1):
+            word1, tag1 = tupls[i]
+            word2, tag2 = tupls[i+1]
+            result['A_pos_pair={0}, {1}'.format(tag1, tag2)] = 1
+    return result
 
 def first_is(turn, fn, key, return_flag):
     return check_specific(turn, 0, fn, key, return_flag)
