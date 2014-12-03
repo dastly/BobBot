@@ -56,6 +56,8 @@ def getTranscript_Metadata(get_demo_info):
         return transcript_metadata
 
 def swda_chat(weights, featureExtractor):
+        if(getYesOrNo("Do you want to run the chat bot?")):
+                return
         print "Hello, I am BobBot!"
         print "I am trained in natural conversation."
         print "Let's pretend we are two people talking on the phone."

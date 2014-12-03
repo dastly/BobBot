@@ -1,5 +1,6 @@
 import sys
 from nltk.tree import Tree
+from sets import Set
 
 def baseline_feature_extractor(x):
     phi = dict()
@@ -12,7 +13,12 @@ def swda_feature_extractor(x):
 
     # Note: Single features create a lot more error than pairwise features
     features_to_use = [
-        act_tag,
+        act_tag, ## Without this, error is back near 50%.  With it, it is around 21%
+        act_tag2, ## 
+        act_tag3, ##
+        act_tag4, ## 2-4 provide an additional 2% decrease
+        act_tag5, ## Another 4%!
+
         # short, 
         # gender,
         # length, 
@@ -46,6 +52,7 @@ def swda_feature_extractor(x):
         ["collab_completion_maybe", A_ends_with_collab_completion, B_is_other_answer],
         ["collab_completion_reject", A_ends_with_collab_completion, B_is_reject],
         ["apology_downplayer", A_contains_apology, B_contains_downplayer]
+        #The above altogether yeild ~.3% reduction
     ]
 
     fn = lambda x : phi.update(create_pair_feature(x, turnA, turnB))
@@ -143,6 +150,31 @@ def act_tag(turnA, turnB):
     tagB = turnB[0].act_tag
     return {"{0}, {1}".format(tagA, tagB) : 1}
 
+def act_tag2(turnA, turnB):
+    if len(turnA) > 1 and len(turnB) > 1:
+        tagA = turnA[len(turnA)-2].act_tag
+        tagB = turnB[1].act_tag
+        return {"Tag2: {0}, {1}".format(tagA, tagB) : 1}
+    return{}
+
+def act_tag3(turnA, turnB):
+    if len(turnA) > 1:
+        tagA = turnA[len(turnA)-2].act_tag
+        tagB = turnB[0].act_tag
+        return {"Tag3: {0}, {1}".format(tagA, tagB) : 1}
+    return{}
+
+def act_tag4(turnA, turnB):
+    if len(turnB) > 1:
+        tagA = turnA[len(turnA)-1].act_tag
+        tagB = turnB[1].act_tag
+        return {"Tag4: {0}, {1}".format(tagA, tagB) : 1}
+    return{}
+
+def act_tag5(turnA, turnB):
+    tagSetA = Set([turn.act_tag for turn in turnA])
+    tagSetB = Set([turn.act_tag for turn in turnB])
+    return{"Tag5: {0}, {1}".format(tagSetA, tagSetB) : 1}
 
 def gender(turnA, turnB):
     genderA = turnA[len(turnA)-1].caller_sex
