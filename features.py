@@ -11,23 +11,39 @@ def swda_feature_extractor(x):
     turnA = x[0]
     turnB = x[1] # both utterances
 
-    # Note: Single features create a lot more error than pairwise features
     features_to_use = [
         act_tag, ## Without this, error is back near 50%.  With it, it is around 21%
         act_tag2, ## 
         act_tag3, ##
         act_tag4, ## 2-4 provide an additional 2% decrease
         act_tag5, ## Another 4%!
-
-        # short, 
+        # short_turn, 
         # gender,
-        # length, 
+        turn_length,
+        utt_length1,
+        utt_length2,
+        utt_length3,
+        utt_length4,
+        utt_length5,
+        A_act_tag_list,
+        B_act_tag_list,
+        # A_act_tag_pairs,
+        # B_act_tag_pairs,
+        # pos_tags1, # increases error by a few % points
+        # A_pos_pairs,
+        # B_pos_pairs,  # having A and B pos_pairs increased error by 13%
+ 
+        ########### CREATE A LOT OF ERROR ###########
+        
         # A_contains_yes_no_question,
         # A_contains_declarative_yn_question,
         # B_is_yes_no_response,
         # contains_question,
         # contains_stmt,
         # contains_acknowledge,
+
+        ############################################
+        
         A_add_subjects,
         B_add_subjects
     ]
@@ -77,6 +93,15 @@ def B_add_subjects(turnA, turnB, return_flag=False):
 
 ######### A ONLY FEATURES ################
 
+def A_act_tag_list(turnA, turnB):
+    return act_tag_list_helper(turnA, 'A')
+
+def A_pos_pairs(turnA, turnB):
+    return pos_pairs_helper(turnA)
+
+def A_act_tag_pairs(turnA, turnB):
+    return act_tag_pairs_helper(turnA, 'A')
+
 def A_contains_declarative_yn_question(turnA, turnB, return_flag=False):
     return contains_something(turnA, is_declarative_yn_question, "A_contains_yn_question", return_flag)
 
@@ -103,6 +128,15 @@ def A_contains_apology(turnA, turnB, return_flag=False):
 
 ######### B ONLY FEATURES ###############
 
+def B_pos_pairs(turnA, turnB):
+    return pos_pairs_helper(turnB, 'B')
+
+def B_act_tag_pairs(turnA, turnB):
+    return act_tag_pairs_helper(turnB, 'B')
+
+def B_act_tag_list(turnA, turnB):
+    return act_tag_list_helper(turnB, 'B')
+    
 def B_is_yes_no_response(turnA, turnB, return_flag=False):
     fn = lambda x: is_yes(x) or is_no(x)
     return exactly_one(turnB, fn, "B_is_yn_response", return_flag)
@@ -137,20 +171,61 @@ def B_contains_downplayer(turnA, turnB, return_flag=False):
     
 ########### BOTH #################
 
-def short(turnA, turnB):
+# POS tags
+
+def pos_tags1(turnA, turnB):
+    return pos_tags_helper(0, turnA, turnB)
+
+def pos_tags_helper(num, turnA, turnB):
+    if len(turnA) > num and len(turnB) > num:
+        uttA = turnA[-1 * (num+1)].pos_lemmas()
+        uttB = turnB[num].pos_lemmas()
+        fn = lambda lst, tup : lst + [tup[1]]
+        posA = reduce(fn, uttA, [])
+        posB = reduce(fn, uttB, [])
+        return {"pos1 : {0}, {1}" : 1}
+    return {}
+
+# Turn length
+
+def short_turn(turnA, turnB):
     if len(turnA) + len(turnB) < 4:
         return {"Short" : 1}
     return {}
 
-def length(turnA, turnB):
+def turn_length(turnA, turnB):
     return {"length: {0}, {1}".format(len(turnA), len(turnB)) : 1}
 
-def act_tag(turnA, turnB):
+# Utterance length
+    
+def utt_length1(turnA, turnB):
+    return get_utt_length(turnA, turnB, 0) # getting the last of A and first of B
+
+def utt_length2(turnA, turnB):
+    return get_utt_length(turnA, turnB, 1) # 2nd last of A and 2nd of B
+
+def utt_length3(turnA, turnB):
+    return get_utt_length(turnA, turnB, 2)
+
+def utt_length4(turnA, turnB):
+    return get_utt_length(turnA, turnB, 3)
+
+def utt_length5(turnA, turnB):
+    return get_utt_length(turnA, turnB, 4)
+
+def get_utt_length(turnA, turnB, num):
+    if len(turnA) > num and len(turnB) > num:
+        lengthA = len(turnA[-1 * (num+1)].text_words())
+        lengthB = len(turnB[num].text_words())
+        return {"utt_length{2}: {0}, {1}".format(lengthA, lengthB, num) : 1} # TODO Change back
+    return {}
+    
+def act_tag(turnA, turnB): # last of A, first of B
     tagA = turnA[len(turnA)-1].act_tag
     tagB = turnB[0].act_tag
-    return {"{0}, {1}".format(tagA, tagB) : 1}
+    return {"Tag1: {0}, {1}".format(tagA, tagB) : 1}
 
-def act_tag2(turnA, turnB):
+def act_tag2(turnA, turnB): # 2nd last of A, 2nd of B
     if len(turnA) > 1 and len(turnB) > 1:
         tagA = turnA[len(turnA)-2].act_tag
         tagB = turnB[1].act_tag
@@ -191,6 +266,28 @@ def contains_stmt(turnA, turnB):
     return both_contain_something(turnA, turnB, is_stmt, "both_contain_stmt")
 
 ############ ACT TAG HELPERS #################
+
+def pos_pairs_helper(turn, order):
+    result = {}
+    for utt in turn:
+        tupls = utt.pos_lemmas()
+        for i in range(0, len(tupls)-1):
+            word1, tag1 = tupls[i]
+            word2, tag2 = tupls[i+1]
+            result['{2}_pos_pair={0}, {1}'.format(tag1, tag2, order)] = 1
+    return result
+
+def act_tag_pairs_helper(turn, order):
+    result = {}
+    for i in range(0, len(turn)-1):
+        tag1 = turn[i].act_tag
+        tag2 = turn[i].act_tag
+        result['{2}_act_tag_pair={0}, {1}'.format(tag1, tag2, order)] = 1
+    return result
+
+def act_tag_list_helper(turn, order):
+    tag_list = map(lambda x : x.act_tag, turn)
+    return { '{0}_act_tag_list={1}'.format(order, tag_list) : 1}
 
 def first_is(turn, fn, key, return_flag):
     return check_specific(turn, 0, fn, key, return_flag)
@@ -294,46 +391,6 @@ def is_apology(utt):
 
 def is_downplayer(utt):
     return utt.act_tag == 'bd'
-
-"""
-- contains question
-- contains y or n answer
-- yes/no question ('qy') with yes/no response ('ny' or 'nn')
-- same as above but with declarative y/no qs (qy^d)
-
-
-- contains statement
-- question / statement
-
-- contains open ended question
-- contains opinion
-- open ended question / opinion
-
-- contains wh-question
-- contains statement nonopinion
-- wh-question / nonopinion
-
-- maybe
-- general question / maybe
-
-- end with right? ***
-
-- uh huh
-- summarize/reformulate / uh huh
-- summarize/reformulate / positive answer
-
-- question / i don't know
-
-- collaborative completion
-- collaborative completion / maybe
-- collaborative completion / uh-huh/yes
-- collaborative completion / reject
-
-- apology
-- apology / that's ok (downplayer)
-
-
-"""
 
 ########### TREE HELPERS #############
 

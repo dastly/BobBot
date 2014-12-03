@@ -34,7 +34,7 @@ def learnPredictor(trainExamples, testExamples, featureExtractor):
 
     '''
     weight = {}
-    numIters = 30
+    numIters = 40
     stepSize = .05
 
     print "Caching..."
