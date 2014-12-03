@@ -5,20 +5,25 @@
 #!/usr/bin/python
 # Filename: bot.py
 
-import swda
-from swda import Transcript
-from swda import CorpusReader
-import SGD
 import random
 import collections
 import math
 import sys
+
+import swda
+from swda import Transcript
+from swda import CorpusReader
+import pdb
+
+import SGD
 from SGD import learnPredictor
-from util import dotProduct
+
 from features import swda_feature_extractor
 from features import baseline_feature_extractor
-import pdb
-from bot_utils import *
+
+from util import dotProduct
+from bot_utils import *     #processUtterances, getPosExamples, isBadTrun, getNegExamples, printExamples
+
 from actual_chat_bot import swda_chat
 
 weights = trainExamplesPosList = testExamplesPosList = None
@@ -154,10 +159,13 @@ def runBot():
     testExamplesPosList = []
     testExamplesNegList = []
 
+    turnSet = []
+
     print "Generating Examples..."
     count = 0
     for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
         turns = processUtterances(transcript)
+        turnSet.append(turns)
         if count < TRAIN_SET_SIZE:
             trainExamplesPos = getPosExamples(turns)   
             trainExamplesNeg = getNegExamples(turns)
@@ -180,7 +188,9 @@ def runBot():
     print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
 
-    swda_chat(weights, swda_feature_extractor)
+    #swda_chat returns false if the chatting is totally over
+    while swda_chat(weights, swda_feature_extractor, turnSet):
+        print "Finished a conversation"
 
     print "Finding Interesting Examples..."
     printExamples(testExamples, weights, swda_feature_extractor)

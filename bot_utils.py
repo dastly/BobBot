@@ -125,3 +125,20 @@ def printExamples(examples, weights, featureExtractor):
             fnFound = True
         if tpFound and fpFound and tnFound and fnFound:
             break
+
+def printTurns(turns, print_act_tags = False, num_turns = 0):
+    if num_turns == 0:
+        num_turns = len(turns)
+    for i in range(num_turns):
+        if i%2 == 0:
+            speaker = "YOU"
+        else:
+            speaker = "ME"
+        for utt in turns[i]:
+            act_tag = ""
+            if print_act_tags:
+                act_tag = " (" + utt.act_tag + ")"
+            print "{0}{1}: {2}".format(speaker, act_tag, utt.text)
+                        
+
+    

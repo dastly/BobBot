@@ -7,21 +7,8 @@ from features import swda_feature_extractor
 from nltk.grammar import PCFG, induce_pcfg, toy_pcfg1, toy_pcfg2
 from nltk.parse.generate import generate
 import random
-
-"""
-# Example of getting random sentence from a grammar
-# Note that generate can be used to get all sentences from a grammar
-#  from which several candidates can be chosen
-
-grammar = toy_pcfg2
-print grammar
-sentences = []
-for sentence in generate(grammar, n=100):
-    sentences.append(' '.join(sentence))
-print random.choice(sentences)
-
-Generate can be rewritten to generate according to the probabilities of a pcfg
-"""
+from bot_utils import isBadTurn
+from bot_utils import printTurns
 
 def getYesOrNo(prompt):
         print prompt
@@ -55,16 +42,38 @@ def getTranscript_Metadata(get_demo_info):
         transcript_metadata = {'to_caller_birth_year':to_caller_birth_year, 'to_caller_education':to_caller_education, 'to_caller_sex':to_caller_sex, 'to_caller_dialect_area':to_caller_dialect_area, 'from_caller_birth_year':from_caller_birth_year, 'from_caller_education':from_caller_education, 'from_caller_sex':from_caller_sex, 'from_caller_dialect_area':from_caller_dialect_area}
         return transcript_metadata
 
-def swda_chat(weights, featureExtractor):
-        if(getYesOrNo("Do you want to run the chat bot?")):
-                return
+def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restrict_bad_turns = True, NUM_CANDIDATES = 100, NUM_START = 6):        
+        if not getYesOrNo("Do you want to run the chat bot?"):
+                return False
+
         print "Hello, I am BobBot!"
         print "I am trained in natural conversation."
         print "Let's pretend we are two people talking on the phone."
 
         get_demo_info = getYesOrNo("Do we want to give demographic info about ourselves?")
         transcript_metadata = getTranscript_Metadata(get_demo_info)
+
         get_act_tag = getYesOrNo("Should I ask for act_tags?")
+
+        turns = []
+        use_specific_discourse = getYesOrNo("Do you want to use a specific discourse?")
+        if use_specific_discourse:
+                print "A few of the possible topic choices:"
+                print "(0,11) Child care, Household duties"
+                print "(1) Drug Testing"
+                print "(2,6) Tracking Finances, Pensions"
+                print "(4,5,13,14) Elderly care"
+                print "(3,7,12) Judicial system"
+                print "(8,10) Recycling"
+                print "(9) Cars"
+                print "(15) Sports"
+                print "(20) Music"
+                
+                discourse_num = raw_input("Enter a discourse number [0-{0}]: ".format(len(turnSet)-1))
+                turns = turnSet[int(discourse_num)]
+        else:
+                for discourse in turnSet:
+                        turns.extend(discourse)
 
         print "Great.  You may speak several sentences at a time if you wish."
         print "Enter an empty line (just hit ENTER) to have me respond."
@@ -84,6 +93,11 @@ def swda_chat(weights, featureExtractor):
         utterance_index = '0'
         subutterance_index = '0'
 
+        if use_specific_discourse:
+                print "Here is the first few exchanges in the discourse"
+                print "Carry on the conversation with me"
+                printTurns(turns, False, 6)
+        
         while True:
                 # The only information that needs to be updated here is pos tags and parsings
                 # I have act_tag as manual input, but ideally this bot would use the other algorithm already built
@@ -95,15 +109,41 @@ def swda_chat(weights, featureExtractor):
                         if text == "":
                                 break
                         if text == "DONE":
-                                return
+                                return True
                         if get_act_tag:
                                 act_tag = raw_input("Act Tag: ")
                         row = [swda_filename, ptb_basename, conversation_no, transcript_index, act_tag, caller, utterance_index, subutterance_index, text, pos, trees, ptb_treenumbers]
                         turnA.append(Utterance(row, transcript_metadata))
 
                 if not turnA:
-                        return
+                        return True
                 
+                #Using set of candidate turns
+                bad_turn_counter = 0
+                candidates = random.sample(turns, min(NUM_CANDIDATES, len(turns)))
+                maxCandidate = candidates[0]
+                maxScore = dotProduct(weights, featureExtractor((turnA, candidates[0])))
+                for candidate in candidates:
+                        if restrict_bad_turns and bad_turn_counter > 2 and isBadTurn(candidate):
+                                continue
+                        if restrict_caller and candidate[0].caller != 'B':
+                                continue
+                        score = dotProduct(weights, featureExtractor((turnA, candidate)))
+                        if score > maxScore:
+                              maxScore = score
+                              maxCandidate = candidate
+                if isBadTurn(maxCandidate):
+                        bad_turn_counter += 1
+                else:
+                        bad_turn_counter = 0
+                for utt in maxCandidate:
+                        print "ME: " + utt.text
+                print "SCORE"
+                print maxScore
+        return True
+
+"""
+OLD JUNK
                 ##This will be replaced with a turnB generated from a grammar or given set of responses
                 ##Useful for manual testing and error analysis
                 act_tag = ''
@@ -126,22 +166,8 @@ def swda_chat(weights, featureExtractor):
                 print "SCORE"
                 print score
                 
-                """
-                #Using set of candidate turns
-                NUM_CANDIDATES = 100
-                candidates = random.sample(turns, NUM_CANDIDATES)
-                maxCandidate = candidates[0]
-                maxScore = dotProduct(weights, featureExtractor((turnA, candidates[]0])))
-                for candidate in candidates:
-                      score = dotProduct(weights, featureExtractor((turnA, candidate)))
-                      if score > maxScore:
-                              maxScore = score
-                              maxCandidate = candidate
-                for utt in maxCandidate:
-                        print "ME: " + utt.text
-                print "SCORE"
-                print maxScore 
-                """
+            
+                
 
 ##        row = ['sw00utt/sw_0001_4325.utt', '4/sw4325', '4325', '0', 'o', 'A', '1', '1', 'Okay.  /', 'Okay/UH ./.', '(INTJ (UH Okay) (. .) (-DFL- E_S))', '1']
 ##        transcript_metadata = {'conversation_no': 4346, 'prompt': 'DITEMS TODAYY', 'from_caller_birth_year': '1963', 'from_caller_education': 1, 'to_caller_birth_year': '1963', 'length': 5, 'from_caller_dialect_area': 'SOUTH MIDLAND', 'from_caller_sex': 'FEMALE', 'to_caller_education': 2, 'to_caller_sex': 'MALE', 'talk_day': '920323', 'to_caller_dialect_area': 'NORTHERN', 'topic_description': 'PUBLIC EDUCATION'}
@@ -187,3 +213,17 @@ def swda_chat(weights, featureExtractor):
 ##       ]
         
 ##swda_chat(None, swda_feature_extractor)
+
+# Example of getting random sentence from a grammar
+# Note that generate can be used to get all sentences from a grammar
+#  from which several candidates can be chosen
+
+grammar = toy_pcfg2
+print grammar
+sentences = []
+for sentence in generate(grammar, n=100):
+    sentences.append(' '.join(sentence))
+print random.choice(sentences)
+
+Generate can be rewritten to generate according to the probabilities of a pcfg
+"""
