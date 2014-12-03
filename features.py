@@ -25,6 +25,10 @@ def swda_feature_extractor(x):
         utt_length3,
         utt_length4,
         utt_length5,
+        A_act_tag_list,
+        B_act_tag_list,
+        # A_act_tag_pairs,
+        # B_act_tag_pairs,
         # pos_tags1, # increases error by a few % points
         # A_pos_pairs,
         # B_pos_pairs,  # having A and B pos_pairs increased error by 13%
@@ -89,8 +93,14 @@ def B_add_subjects(turnA, turnB, return_flag=False):
 
 ######### A ONLY FEATURES ################
 
+def A_act_tag_list(turnA, turnB):
+    return act_tag_list_helper(turnA, 'A')
+
 def A_pos_pairs(turnA, turnB):
     return pos_pairs_helper(turnA)
+
+def A_act_tag_pairs(turnA, turnB):
+    return act_tag_pairs_helper(turnA, 'A')
 
 def A_contains_declarative_yn_question(turnA, turnB, return_flag=False):
     return contains_something(turnA, is_declarative_yn_question, "A_contains_yn_question", return_flag)
@@ -119,8 +129,14 @@ def A_contains_apology(turnA, turnB, return_flag=False):
 ######### B ONLY FEATURES ###############
 
 def B_pos_pairs(turnA, turnB):
-    return pos_pairs_helper(turnB)
+    return pos_pairs_helper(turnB, 'B')
 
+def B_act_tag_pairs(turnA, turnB):
+    return act_tag_pairs_helper(turnB, 'B')
+
+def B_act_tag_list(turnA, turnB):
+    return act_tag_list_helper(turnB, 'B')
+    
 def B_is_yes_no_response(turnA, turnB, return_flag=False):
     fn = lambda x: is_yes(x) or is_no(x)
     return exactly_one(turnB, fn, "B_is_yn_response", return_flag)
@@ -251,15 +267,27 @@ def contains_stmt(turnA, turnB):
 
 ############ ACT TAG HELPERS #################
 
-def pos_pairs_helper(turn):
+def pos_pairs_helper(turn, order):
     result = {}
     for utt in turn:
         tupls = utt.pos_lemmas()
         for i in range(0, len(tupls)-1):
             word1, tag1 = tupls[i]
             word2, tag2 = tupls[i+1]
-            result['A_pos_pair={0}, {1}'.format(tag1, tag2)] = 1
+            result['{2}_pos_pair={0}, {1}'.format(tag1, tag2, order)] = 1
     return result
+
+def act_tag_pairs_helper(turn, order):
+    result = {}
+    for i in range(0, len(turn)-1):
+        tag1 = turn[i].act_tag
+        tag2 = turn[i].act_tag
+        result['{2}_act_tag_pair={0}, {1}'.format(tag1, tag2, order)] = 1
+    return result
+
+def act_tag_list_helper(turn, order):
+    tag_list = map(lambda x : x.act_tag, turn)
+    return { '{0}_act_tag_list={1}'.format(order, tag_list) : 1}
 
 def first_is(turn, fn, key, return_flag):
     return check_specific(turn, 0, fn, key, return_flag)
