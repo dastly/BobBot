@@ -5,17 +5,9 @@
 #!/usr/bin/python
 # Filename: bot.py
 
-import random
-import collections
-import math
-import sys
-
-import swda
+import random, collections, math, sys, getopt, pdb
 from swda import Transcript
 from swda import CorpusReader
-import pdb
-
-import SGD
 from SGD import learnPredictor
 
 from features import swda_feature_extractor
@@ -27,6 +19,8 @@ from bot_utils import *     #processUtterances, getPosExamples, isBadTrun, getNe
 from actual_chat_bot import swda_chat
 
 weights = trainExamplesPosList = testExamplesPosList = None
+
+WEIGHTS_FILENAME = "weights.json"
 
 def guessEval(examples):
     global weights
@@ -142,7 +136,7 @@ def humanChoice():
         print 1.0*yourCorrect/soFar
 
     
-def runBot():
+def runBot(train_flag):
 
     global weights, trainExamplesPosList, testExamplesPosList
     
@@ -161,38 +155,52 @@ def runBot():
 
     turnSet = []
 
-    print "Generating Examples..."
-    count = 0
-    for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
-        turns = processUtterances(transcript)
-        turnSet.append(turns)
-        if count < TRAIN_SET_SIZE:
-            trainExamplesPos = getPosExamples(turns)   
-            trainExamplesNeg = getNegExamples(turns)
-            trainExamplesPosList.append(trainExamplesPos)
-            trainExamplesNegList.append(trainExamplesNeg)
-            trainExamples.extend(trainExamplesPos)
-            trainExamples.extend(trainExamplesNeg)
-            count = count + 1
-        elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
-            testExamplesPos = getPosExamples(turns)   
-            testExamplesNeg = getNegExamples(turns)
-            testExamplesPosList.append(testExamplesPos)
-            testExamplesNegList.append(testExamplesNeg)
-            testExamples.extend(trainExamplesPos)
-            testExamples.extend(trainExamplesNeg)
-            count = count + 1
-        else:
-            break
-    print "Finding Tag Counts..."
-    printTagCount(turnSet)
-
-    print "Finding Bad Turns..."
-    printNumBadTurns(turnSet)
-    printAvgStats()
+    if train_flag:
+        print "Generating Examples..."
+        count = 0
+        for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
+            turns = processUtterances(transcript)
+            turnSet.append(turns)
+            if count < TRAIN_SET_SIZE:
+                trainExamplesPos = getPosExamples(turns)   
+                trainExamplesNeg = getNegExamples(turns)
+                trainExamplesPosList.append(trainExamplesPos)
+                trainExamplesNegList.append(trainExamplesNeg)
+                trainExamples.extend(trainExamplesPos)
+                trainExamples.extend(trainExamplesNeg)
+                count = count + 1
+            elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
+                testExamplesPos = getPosExamples(turns)   
+                testExamplesNeg = getNegExamples(turns)
+                testExamplesPosList.append(testExamplesPos)
+                testExamplesNegList.append(testExamplesNeg)
+                testExamples.extend(trainExamplesPos)
+                testExamples.extend(trainExamplesNeg)
+                count = count + 1
+            else:
+                break
+        print "Finding Tag Counts..."
+        printTagCount(turnSet)
+        
+        print "Finding Bad Turns..."
+        printNumBadTurns(turnSet)
+        printAvgStats()
     
-    print "Training Predictor..."
-    weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
+        print "Training Predictor..."
+        calculatedWeights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
+        save_weights_to_file(WEIGHTS_FILENAME, calculatedWeights)
+        weights = calculatedWeights
+
+    if not weights:
+        weights = read_weights_from_file(WEIGHTS_FILENAME)
+        counter = 0
+        print "Generating Examples..."
+        for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
+            turns = processUtterances(transcript)
+            turnSet.append(turns)
+            if counter >= TEST_SET_SIZE + TRAIN_SET_SIZE:
+                break
+            counter += 1
 
     #swda_chat returns false if the chatting is totally over
     while swda_chat(weights, swda_feature_extractor, turnSet):
@@ -230,7 +238,15 @@ def runBot():
     print "Test Guessing Score"
     print 1.0 * summ/len(testExamplesPosList)
     
-##    humanChoice()
 
+def usage():
+    print 'Usage: python bot.py [-t]'
+    print '-t OR --train = to train the chatbot'
+    
 if __name__ == "__main__":
-    runBot()
+    opts, args = getopt.getopt(sys.argv[1:], "t", ["train"])
+    train_flag = False
+    for opt, arg in opts:
+        if opt in ('-t', '--train'):
+            train_flag = True
+    runBot(train_flag)
