@@ -207,8 +207,9 @@ def chooseFromDistribution(distribution):
   summ = 0
   for element, score in distribution:
     summ += score
-  for element, score, index in enumerate(distribution):
-    distribution[index] = (element, 1.0 * score / summ)
+  for index, pair in enumerate(distribution):
+      element, score = pair
+      distribution[index] = (element, 1.0 * score / summ)
 
   r = random.random()
   base = 0.0
