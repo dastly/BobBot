@@ -195,6 +195,9 @@ def runBot():
     print "Finding Interesting Examples..."
     printExamples(testExamples, weights, swda_feature_extractor)
 
+    print "Finding highest and lowest weights..."
+    printWeightStatistics(weights, 5)
+
     print "Evaluating Bot..."
     print "Train Choosing..."
     summ = 0

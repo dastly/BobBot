@@ -1,5 +1,6 @@
 import random
 from util import dotProduct
+from collections import Counter
 
 
 def processUtterances(transcript):
@@ -84,44 +85,44 @@ def printExamples(examples, weights, featureExtractor):
             print "Prompt"
             for utt in example[0][0]:
                 print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
             print "Response"
             for utt in example[0][1]:
                 print utt.text_words();
-            print example[0][1][0].act_tag
+            for key in phi:
+                print "{0}: {1}".format(key, weights[key])
             tpFound = True
         if not fpFound and score > -.5 and example[1] == -1:
             print "FOUND: False Positive"
             print "Prompt"
             for utt in example[0][0]:
                 print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
             print "Response"
             for utt in example[0][1]:
                 print utt.text_words();
-            print example[0][1][0].act_tag
+            for key in phi:
+                print "{0}: {1}".format(key, weights[key])
             fpFound = True
         if not tnFound and score < -.5 and example[1] == -1:
             print "FOUND: True Negative"
             print "Prompt"
             for utt in example[0][0]:
                 print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
             print "Response"
             for utt in example[0][1]:
                 print utt.text_words();
-            print example[0][1][0].act_tag
+            for key in phi:
+                print "{0}: {1}".format(key, weights[key])
             tnFound = True
         if not fnFound and score < -.5 and example[1] == 1:
             print "FOUND: False Negative"
             print "Prompt"
             for utt in example[0][0]:
                 print utt.text_words();
-            print example[0][0][len(example[0][0])-1].act_tag
             print "Response"
             for utt in example[0][1]:
                 print utt.text_words();
-            print example[0][1][0].act_tag
+            for key in phi:
+                print "{0}: {1}".format(key, weights[key])
             fnFound = True
         if tpFound and fpFound and tnFound and fnFound:
             break
@@ -140,5 +141,18 @@ def printTurns(turns, print_act_tags = False, num_turns = 0):
                 act_tag = " (" + utt.act_tag + ")"
             print "{0}{1}: {2}".format(speaker, act_tag, utt.text)
                         
+def printWeightStatistics(weightsIn, NUM_FEATURES = 5):
+    weights = {}
+    weightsInv = {}
+    for k,v in weightsIn.items():
+        if  "'b'" in k or "'%'" in k or "'x'" in k: continue
+        weights[k] = v
+        if "utt_length" in k: continue
+        weightsInv[k] = -v
+    c = Counter(weights)
+    print c.most_common(NUM_FEATURES)
+    c = Counter(weightsInv)
+    print c.most_common(NUM_FEATURES)
+
 
     

@@ -50,8 +50,8 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
         print "I am trained in natural conversation."
         print "Let's pretend we are two people talking on the phone."
 
-        get_demo_info = getYesOrNo("Do we want to give demographic info about ourselves?")
-        transcript_metadata = getTranscript_Metadata(get_demo_info)
+##        get_demo_info = getYesOrNo("Do we want to give demographic info about ourselves?")
+        transcript_metadata = getTranscript_Metadata(False)
 
         get_act_tag = getYesOrNo("Should I ask for act_tags?")
 
@@ -96,8 +96,9 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
         if use_specific_discourse:
                 print "Here is the first few exchanges in the discourse"
                 print "Carry on the conversation with me"
-                printTurns(turns, False, 6)
+                printTurns(turns, True, 6)
         
+        bad_turn_counter = 0
         while True:
                 # The only information that needs to be updated here is pos tags and parsings
                 # I have act_tag as manual input, but ideally this bot would use the other algorithm already built
@@ -118,13 +119,14 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
                 if not turnA:
                         return True
                 
+                BAD_TURN_MAX = 1
+
                 #Using set of candidate turns
-                bad_turn_counter = 0
                 candidates = random.sample(turns, min(NUM_CANDIDATES, len(turns)))
                 maxCandidate = candidates[0]
                 maxScore = dotProduct(weights, featureExtractor((turnA, candidates[0])))
                 for candidate in candidates:
-                        if restrict_bad_turns and bad_turn_counter > 2 and isBadTurn(candidate):
+                        if restrict_bad_turns and bad_turn_counter >= BAD_TURN_MAX and isBadTurn(candidate):
                                 continue
                         if restrict_caller and candidate[0].caller != 'B':
                                 continue
@@ -137,7 +139,8 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
                 else:
                         bad_turn_counter = 0
                 for utt in maxCandidate:
-                        print "ME: " + utt.text
+                        print "ME (" + utt.act_tag + "): " + utt.text
+                # print featureExtractor((turnA, maxCandidate))
                 print "SCORE"
                 print maxScore
         return True

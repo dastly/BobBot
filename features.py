@@ -25,6 +25,11 @@ def swda_feature_extractor(x):
         utt_length3,
         utt_length4,
         utt_length5,
+
+        # Length is good, but it seems to worsen the actual chatting a bit.
+        # This may just be because we tend to type in shorter sentences,
+        # but speak in longer ones.  This discrepency causes issues.
+
         A_act_tag_list,
         B_act_tag_list,
         # A_act_tag_pairs,
