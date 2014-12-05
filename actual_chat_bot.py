@@ -123,6 +123,7 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
 
                 #Using set of candidate turns
                 candidates = random.sample(turns, min(NUM_CANDIDATES, len(turns)))
+                candidate_and_score = []
                 maxCandidate = candidates[0]
                 maxScore = dotProduct(weights, featureExtractor((turnA, candidates[0])))
                 for candidate in candidates:
@@ -131,6 +132,7 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
                         if restrict_caller and candidate[0].caller != 'B':
                                 continue
                         score = dotProduct(weights, featureExtractor((turnA, candidate)))
+                        candidate_and_score.append((candidate, score))
                         if score > maxScore:
                               maxScore = score
                               maxCandidate = candidate

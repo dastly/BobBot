@@ -154,5 +154,43 @@ def printWeightStatistics(weightsIn, NUM_FEATURES = 5):
     c = Counter(weightsInv)
     print c.most_common(NUM_FEATURES)
 
-
+def printTagCount(turnSet):
+    c = Counter()
+    for discourse in turnSet:
+        for turn in discourse:
+            for utt in turn:
+                c[utt.act_tag] += 1
+    print c
     
+def printNumBadTurns(turnSet):
+    badTurnCount = 0
+    turnCount = 0
+    averageBadTurnDensity = 0
+    for discourse in turnSet:
+        discourseTurnCount = 0
+        discourseBadTurnCount = 0
+        for turn in discourse:
+            turnCount += 1
+            discourseTurnCount += 1
+            if isBadTurn(turn):
+                badTurnCount += 1
+                discourseBadTurnCount += 1
+        averageBadTurnDensity += 1.0 * discourseBadTurnCount / discourseTurnCount
+    print "NUM BAD TURNS: {0}".format(badTurnCount)
+    print "NUM TURNS: {0}".format(turnCount)
+    print "AVG BAD TURN DENSITY: {0}".format(1.0 * badTurnCount / turnCount)
+    print "AVG BAD TURN DENSITY: {0}".format(1.0 * averageBadTurnDensity / len(turnSet))
+
+def chooseFromDistribution(distribution):
+  "Takes either a counter or a list of (prob, key) pairs and samples"
+  summ = 0
+  for element, score in distribution:
+    summ += score
+  for element, score, index in enumerate(distribution):
+    distribution[index] = (element, 1.0 * score / summ)
+
+  r = random.random()
+  base = 0.0
+  for element, prob in distribution:
+    base += prob
+    if r <= base: return element

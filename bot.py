@@ -184,7 +184,12 @@ def runBot():
             count = count + 1
         else:
             break
+    print "Finding Tag Counts..."
+    printTagCount(turnSet)
 
+    print "Finding Bad Turns..."
+    printNumBadTurns(turnSet)
+    
     print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
 
