@@ -185,6 +185,7 @@ def runBot():
         else:
             break
 
+    printAvgStats()
     print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
 
