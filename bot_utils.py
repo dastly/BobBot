@@ -2,12 +2,18 @@ import random
 from util import dotProduct
 from collections import Counter
 
+num_utterances = total_utt_length = 0
+num_turns = total_turn_length = 0
+num_turn_pairs = total_turn_pair_diff = 0
 
 def processUtterances(transcript):
+    global num_utterances, total_utt_length, num_turns, total_turn_length
     turns = []
     turn = []
     utterances = transcript.utterances
+    num_utterances += len(utterances)
     for utterance in utterances:
+        total_utt_length += len(utterance.text_words())
         if len(turn) == 0:
             turn.append(utterance)
         else:
@@ -17,13 +23,18 @@ def processUtterances(transcript):
                 turns.append(turn)
                 turn = []
                 turn.append(utterance)
+    num_turns += 1
+    total_turn_length += len(turn)
     turns.append(turn)
     return turns
 
 def getPosExamples(turns):
+    global num_turn_pairs, total_turn_pair_diff
     posExamples = []
     for i in range(1, len(turns)):
+        total_turn_pair_diff += abs(len(turns[i-1]) - len(turns[i]))
         posExamples.append(((turns[i-1], turns[i]), 1))
+    num_turn_pairs += len(posExamples)
     return posExamples
 
 #Returns true if turn only contains utterances that are backchannels, turn-exits, or noise
@@ -54,6 +65,7 @@ def getNegExamples(turns):
 #Extension of the original getNegExamples gets rid of badTurns
 #It still adds the same number of negative examples by adding extras at the end
 def getNegExamples(turns):
+    global num_turn_pairs, total_turn_pair_diff
     negExamples = []
     badTurnCount = 0
     for i in range(1, len(turns)):
@@ -64,6 +76,7 @@ def getNegExamples(turns):
         while filterNeg(turns[i-1], turns[randomInt]) or randomInt == i:
             randomInt = random.randint(0, len(turns) - 1)
         negExamples.append(((turns[i-1], turns[randomInt]), -1))
+        total_turn_pair_diff += abs(len(turns[i-1]) - len(turns[randomInt]))
     while badTurnCount > 0:
         randomInt1 = random.randint(0, len(turns) - 1)
         if isBadTurn(turns[randomInt1]):
@@ -72,7 +85,10 @@ def getNegExamples(turns):
         while filterNeg(turns[randomInt1], turns[randomInt2]) or randomInt1 + 1 == randomInt2:
             randomInt2 = random.randint(0, len(turns) - 1)
         negExamples.append(((turns[randomInt1], turns[randomInt2]), -1))
+        total_turn_pair_diff += abs(len(turns[randomInt2]) - len(turns[randomInt1]))
         badTurnCount = badTurnCount - 1
+        
+    num_turn_pairs += len(negExamples)
     return negExamples
 
 def printExamples(examples, weights, featureExtractor):
@@ -140,6 +156,11 @@ def printTurns(turns, print_act_tags = False, num_turns = 0):
             if print_act_tags:
                 act_tag = " (" + utt.act_tag + ")"
             print "{0}{1}: {2}".format(speaker, act_tag, utt.text)
+
+def printAvgStats():
+    print 'Average Utterance Length = ', float(total_utt_length)/float(num_utterances)
+    print 'Average Turn Length = ', float(total_turn_length)/float(num_turns)
+    print 'Average Difference in Turn Length in a pair = ', float(total_turn_pair_diff)/float(num_turn_pairs)
                         
 def printWeightStatistics(weightsIn, NUM_FEATURES = 5):
     weights = {}

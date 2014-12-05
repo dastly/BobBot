@@ -189,6 +189,7 @@ def runBot():
 
     print "Finding Bad Turns..."
     printNumBadTurns(turnSet)
+    printAvgStats()
     
     print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
