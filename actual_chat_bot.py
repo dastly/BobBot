@@ -6,9 +6,8 @@ from util import dotProduct
 from features import swda_feature_extractor
 from nltk.grammar import PCFG, induce_pcfg, toy_pcfg1, toy_pcfg2
 from nltk.parse.generate import generate
-import random
-from bot_utils import isBadTurn
-from bot_utils import printTurns
+import random, pdb
+from bot_utils import *
 
 def getYesOrNo(prompt):
         print prompt
@@ -154,19 +153,23 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
 
                 #Using set of candidate turns
                 candidates = random.sample(turns, min(NUM_CANDIDATES, len(turns)))
-                candidate_and_score = []
-                maxCandidate = candidates[0]
-                maxScore = dotProduct(weights, featureExtractor((turnA, candidates[0])))
+                candidates_and_scores = []
+                # maxCandidate = candidates[0]
+                # maxScore = dotProduct(weights, featureExtractor((turnA, candidates[0])))
                 for candidate in candidates:
                         if restrict_bad_turns and bad_turn_counter >= BAD_TURN_MAX and isBadTurn(candidate):
                                 continue
                         if restrict_caller and candidate[0].caller != 'B':
                                 continue
                         score = dotProduct(weights, featureExtractor((turnA, candidate)))
-                        candidate_and_score.append((candidate, score))
-                        if score > maxScore:
-                              maxScore = score
-                              maxCandidate = candidate
+                        if score > 0:
+                                candidates_and_scores.append((candidate, score))
+                        # if score > maxScore:
+                        #       maxScore = score
+                        #       maxCandidate = candidate
+
+                maxCandidate, maxScore = chooseFromDistribution(candidates_and_scores)
+                print_candidates_and_scores(candidates_and_scores)
                 if isBadTurn(maxCandidate):
                         bad_turn_counter += 1
                 else:

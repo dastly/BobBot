@@ -1,4 +1,4 @@
-import random
+import random, json, os
 from util import dotProduct
 from collections import Counter
 from sets import Set
@@ -247,3 +247,42 @@ def printInterruptionStats(turnSet, NUM_MOST_COMMON = 10):
     print backChannelPrevCounter.most_common(NUM_MOST_COMMON)
     print "Tags Before Collaborative Completion"
     print collabPrevCounter.most_common(NUM_MOST_COMMON)
+
+def chooseFromDistribution(distribution):
+  "Takes a list of (prob, key) pairs and samples"
+  summ = 0
+  for element, score in distribution:
+    summ += score
+  for index, pair in enumerate(distribution):
+      element, score = pair
+      distribution[index] = (element, 1.0 * score / summ)
+
+  r = random.random()
+  base = 0.0
+  for element, prob in distribution:
+    base += prob
+    if r <= base: return (element, prob)
+
+def read_weights_from_file(filename):
+    try:
+        with open(filename, 'r') as weights_file:
+            weights = json.load(weights_file)
+            return weights
+    except Exception:
+        print 'ERROR: Weights file does not exist or is malformed'
+        raise
+
+def save_weights_to_file(filename, weights):
+    try:
+        os.remove(filename)
+    except:
+        pass
+    with open(filename, 'w') as weights_file:
+        weights_file.write(json.dumps(weights))
+
+def utt_list_to_string(utt_list):
+    return map(lambda utt: reduce(lambda x, y : x + y + ' ', utt.text_words(), "").strip(), utt_list)
+        
+def print_candidates_and_scores(candidates_and_scores):
+    for cand, score in candidates_and_scores:
+        print 'Candidate = {0}, Score = {1}'.format(utt_list_to_string(cand), score)
