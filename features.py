@@ -48,7 +48,9 @@ def swda_feature_extractor(x):
         # contains_acknowledge,
 
         ############################################
-        
+        # FOR INTERRUPTIONS #
+        interruption_features,
+
         A_add_subjects,
         B_add_subjects
     ]
@@ -430,3 +432,18 @@ def get_subjects(utt):
     subj_labels = [node.leaves()[0] for node in subj_nodes if len(node.leaves()) == 1]
     return subj_labels
     
+##### INTERRUPTION FEATURES ######
+
+def interruption_features(turnA, turnB):
+    result = {}
+    if len(turnB) > 0:
+        interruption_type = None
+        if is_acknowledge(turnB[0]):
+            interruption_type = 'backchannel'
+        elif is_collab_completion(turnB[0]):
+            interruption_type = 'collab'
+        if interruption_type:
+            result['turn_length_pre_backchannel_interruption={0}'.format(len(turnA), interruption_type)] = 1
+            act_tags = set([utt.act_tag for utt in turnA])
+            result['pre_{1}_tags={0}'.format(act_tags, interruption_type)] = 1
+    return result

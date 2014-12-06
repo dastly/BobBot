@@ -155,36 +155,37 @@ def runBot(train_flag):
 
     turnSet = []
 
+    print "Generating Examples..."
+    count = 0
+    for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
+        turns = processUtterances(transcript)
+        turnSet.append(turns)
+        if count < TRAIN_SET_SIZE:
+            trainExamplesPos = getPosExamples(turns)   
+            trainExamplesNeg = getNegExamples(turns)
+            trainExamplesPosList.append(trainExamplesPos)
+            trainExamplesNegList.append(trainExamplesNeg)
+            trainExamples.extend(trainExamplesPos)
+            trainExamples.extend(trainExamplesNeg)
+            count = count + 1
+        elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
+            testExamplesPos = getPosExamples(turns)   
+            testExamplesNeg = getNegExamples(turns)
+            testExamplesPosList.append(testExamplesPos)
+            testExamplesNegList.append(testExamplesNeg)
+            testExamples.extend(trainExamplesPos)
+            testExamples.extend(trainExamplesNeg)
+            count = count + 1
+        else:
+            break
+    print "Finding Tag Counts..."
+    printTagCount(turnSet)
+    
+    print "Finding Bad Turns..."
+    printNumBadTurns(turnSet)
+    printAvgStats()
+    
     if train_flag:
-        print "Generating Examples..."
-        count = 0
-        for transcript in CorpusReader('swda').iter_transcripts(display_progress=False):
-            turns = processUtterances(transcript)
-            turnSet.append(turns)
-            if count < TRAIN_SET_SIZE:
-                trainExamplesPos = getPosExamples(turns)   
-                trainExamplesNeg = getNegExamples(turns)
-                trainExamplesPosList.append(trainExamplesPos)
-                trainExamplesNegList.append(trainExamplesNeg)
-                trainExamples.extend(trainExamplesPos)
-                trainExamples.extend(trainExamplesNeg)
-                count = count + 1
-            elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
-                testExamplesPos = getPosExamples(turns)   
-                testExamplesNeg = getNegExamples(turns)
-                testExamplesPosList.append(testExamplesPos)
-                testExamplesNegList.append(testExamplesNeg)
-                testExamples.extend(trainExamplesPos)
-                testExamples.extend(trainExamplesNeg)
-                count = count + 1
-            else:
-                break
-        print "Finding Tag Counts..."
-        printTagCount(turnSet)
-        
-        print "Finding Bad Turns..."
-        printNumBadTurns(turnSet)
-        printAvgStats()
     
         print "Training Predictor..."
         calculatedWeights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)
