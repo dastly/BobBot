@@ -19,6 +19,7 @@ def swda_feature_extractor(x):
         act_tag3, ##
         act_tag4, ## 2-4 provide an additional 2% decrease
         act_tag5, ## Like 1-4 combined  Changes from 15/13 to 14/14
+
         act_tag_set, ## Another 4%!
         # pronouns, # Adds 3% error
         # short_turn, 
@@ -57,8 +58,8 @@ def swda_feature_extractor(x):
         # FOR INTERRUPTIONS #
         interruption_features,
 
-        A_add_subjects,
-        B_add_subjects
+        # A_add_subjects,
+        # B_add_subjects,
     ]
     mod = sys.modules[__name__]
     fn = lambda x : phi.update(x(turnA, turnB))
@@ -234,6 +235,16 @@ def utt_length4(turnA, turnB):
 
 def utt_length5(turnA, turnB):
     return get_utt_length(turnA, turnB, 4)
+
+def utt_length_last_2_first_2(turnA, turnB):
+    if len(turnA) >= 2 and len(turnB) >= 2:
+        second_last_A = turnA[-2]
+        last_A = turnA[-1]
+        first_B = turnB[0]
+        second_B = turnB[1]
+        lengths = map(lambda utt : len(utt.text_words()), [second_last_A, last_A, first_B, second_B])
+        return {"Utt length: last 2 = {0}, {1} / first 2 = {2}, {3}".format(lengths[0], lengths[1], lengths[2], lengths[3]) : 1}
+    return {}
 
 def get_utt_length(turnA, turnB, num):
     if len(turnA) > num and len(turnB) > num:
