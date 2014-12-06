@@ -50,8 +50,8 @@ def runBot(train_flag):
             testExamplesNeg = getNegExamples(turns)
             testExamplesPosList.append(testExamplesPos)
             testExamplesNegList.append(testExamplesNeg)
-            testExamples.extend(trainExamplesPos)
-            testExamples.extend(trainExamplesNeg)
+            testExamples.extend(testExamplesPos)
+            testExamples.extend(testExamplesNeg)
             count = count + 1
         else:
             break

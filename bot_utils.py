@@ -134,7 +134,8 @@ def printExamples(examples, weights, featureExtractor):
             for utt in example[0][1]:
                 print utt.text_words();
             for key in phi:
-                print "{0}: {1}".format(key, weights[key])
+                if key in weights:
+                    print "{0}: {1}".format(key, weights[key])
             tpFound = True
         if not fpFound and score > -.5 and example[1] == -1:
             print "FOUND: False Positive"
@@ -145,7 +146,8 @@ def printExamples(examples, weights, featureExtractor):
             for utt in example[0][1]:
                 print utt.text_words();
             for key in phi:
-                print "{0}: {1}".format(key, weights[key])
+                if key in weights:
+                    print "{0}: {1}".format(key, weights[key])
             fpFound = True
         if not tnFound and score < -.5 and example[1] == -1:
             print "FOUND: True Negative"
@@ -156,7 +158,8 @@ def printExamples(examples, weights, featureExtractor):
             for utt in example[0][1]:
                 print utt.text_words();
             for key in phi:
-                print "{0}: {1}".format(key, weights[key])
+                if key in weights:
+                    print "{0}: {1}".format(key, weights[key])
             tnFound = True
         if not fnFound and score < -.5 and example[1] == 1:
             print "FOUND: False Negative"
