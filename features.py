@@ -12,14 +12,56 @@ def swda_feature_extractor(x):
     turnB = x[1] # both utterances
 
     features_to_use = [
+
+    # I tried removing all act tag stuff (minus pairwise, and it went to 26%/21%)
         act_tag, ## Without this, error is back near 50%.  With it, it is around 21%
         act_tag2, ## 
         act_tag3, ##
         act_tag4, ## 2-4 provide an additional 2% decrease
-        act_tag5, ## Another 4%!
+        act_tag5, ## Like 1-4 combined  Changes from 15/13 to 14/14
+# Step 35: train error = 0.148498982686, test error = 0.138059701493 \\
+# Step 36: train error = 0.148177473224, test error = 0.138059701493 \\
+# Step 37: train error = 0.148398211064, test error = 0.138059701493 \\
+# Step 38: train error = 0.148791700257, test error = 0.141791044776 \\
+# Step 39: train error = 0.147174555645, test error = 0.134328358209 \\
+# Step 40: train error = 0.147865561058, test error = 0.141791044776 \\
+# versus
+# Step 35: train error = 0.152385888134, test error = 0.14552238806 \\
+# Step 36: train error = 0.152006794887, test error = 0.141791044776 \\
+# Step 37: train error = 0.152126761104, test error = 0.14552238806 \\
+# Step 38: train error = 0.152064378671, test error = 0.141791044776 \\
+# Step 39: train error = 0.151464547583, test error = 0.130597014925 \\
+# Step 40: train error = 0.151354178663, test error = 0.134328358209 \\
+        act_tag_set, ## Another 4%!
+        # pronouns, # Adds 3% error
         # short_turn, 
         # gender,
         turn_length,
+        turn_length_words, 
+# TEST SIZE 50
+# Step 35: train error = 0.139415140696, test error = 0.10447761194 \\
+# Step 36: train error = 0.139952589351, test error = 0.111940298507 \\
+# Step 37: train error = 0.139362355561, test error = 0.10447761194 \\
+# Step 38: train error = 0.139885408269, test error = 0.0970149253731 \\ !!!
+# Step 39: train error = 0.139779837998, test error = 0.10447761194 \\
+# Step 40: train error = 0.139741448808, test error = 0.111940298507 \\
+# Removing all b%x utterances all together (Not terrible)
+# Step 35: train error = 0.176034892631, test error = 0.1 \\
+# Step 36: train error = 0.178746144325, test error = 0.0833333333333 \\
+# Step 37: train error = 0.176869879565, test error = 0.075 \\
+# Step 38: train error = 0.175504430342, test error = 0.0833333333333 \\
+# Step 39: train error = 0.175455313464, test error = 0.0916666666667 \\
+# Step 40: train error = 0.175062378436, test error = 0.1 \\
+# Allowing all b%x (in Neg too) (terrible)
+# Step 35: train error = 0.342609121271, test error = 0.291044776119 \\
+# Step 36: train error = 0.345435525356, test error = 0.298507462687 \\
+# Step 37: train error = 0.343808783447, test error = 0.313432835821 \\
+# Step 38: train error = 0.345723444278, test error = 0.30223880597 \\
+# Step 39: train error = 0.344322238858, test error = 0.291044776119 \\
+# Step 40: train error = 0.341260700987, test error = 0.294776119403 \\
+# Train Choosing Score: 0.745160664528
+# Test Choosing Score: 0.683510284641
+
         utt_length1,
         utt_length2,
         utt_length3,
@@ -203,6 +245,15 @@ def short_turn(turnA, turnB):
 def turn_length(turnA, turnB):
     return {"length: {0}, {1}".format(len(turnA), len(turnB)) : 1}
 
+def turn_length_words(turnA, turnB):
+    lengthA = 0
+    lengthB = 0
+    for utt in turnA:
+        lengthA += len(utt.text_words())
+    for utt in turnB:
+        lengthB += len(utt.text_words())
+    return {"length: {0}, {1}".format(lengthA, lengthB) : 1}
+
 # Utterance length
     
 def utt_length1(turnA, turnB):
@@ -239,14 +290,14 @@ def act_tag2(turnA, turnB): # 2nd last of A, 2nd of B
         return {"Tag2: {0}, {1}".format(tagA, tagB) : 1}
     return{}
 
-def act_tag3(turnA, turnB):
+def act_tag3(turnA, turnB): # 2nd to last of A, first of B
     if len(turnA) > 1:
         tagA = turnA[len(turnA)-2].act_tag
         tagB = turnB[0].act_tag
         return {"Tag3: {0}, {1}".format(tagA, tagB) : 1}
     return{}
 
-def act_tag4(turnA, turnB):
+def act_tag4(turnA, turnB): # last of A, second of B
     if len(turnB) > 1:
         tagA = turnA[len(turnA)-1].act_tag
         tagB = turnB[1].act_tag
@@ -254,9 +305,19 @@ def act_tag4(turnA, turnB):
     return{}
 
 def act_tag5(turnA, turnB):
+    secondToLastA = lastA = firstB = secondB = ''
+    if len(turnA) > 1:
+        secondToLastA = turnA[len(turnA)-2].act_tag
+    lastA = turnA[len(turnA)-1].act_tag
+    firstB = turnB[0].act_tag
+    if len(turnB) > 1:
+        secondB = turnB[1].act_tag
+    return{"Last 2 First 2: {0}, {1} ; {2} {3}".format(secondToLastA, lastA, firstB, secondB) : 1}
+
+def act_tag_set(turnA, turnB): # entire set for both turns
     tagSetA = Set([turn.act_tag for turn in turnA])
     tagSetB = Set([turn.act_tag for turn in turnB])
-    return{"Tag5: {0}, {1}".format(tagSetA, tagSetB) : 1}
+    return{"Tag Set: {0}, {1}".format(tagSetA, tagSetB) : 1}
 
 def gender(turnA, turnB):
     genderA = turnA[len(turnA)-1].caller_sex
@@ -447,3 +508,27 @@ def interruption_features(turnA, turnB):
             act_tags = set([utt.act_tag for utt in turnA])
             result['pre_{1}_tags={0}'.format(act_tags, interruption_type)] = 1
     return result
+
+##### PRONOUN FEATURES #####
+def pronouns(turnA, turnB):
+    AIfound = BIfound = AYouFound = BYouFound = False
+    for utt in turnA:
+        if utt.text.find("I"):
+            AIfound = True
+        if utt.text.find("you"):
+            AYouFound = True
+    for utt in turnB:
+        if utt.text.find("I"):
+            BIfound = True
+        if utt.text.find("you"):
+            BYouFound = True
+    proA = proB = ""
+    if AIfound and AYouFound: proA = "us"
+    if BIfound and BYouFound: proB = "us"
+    if AIfound and not AYouFound: proA = "I"
+    if not AIfound and AYouFound: proA = "You"
+    if BIfound and not BYouFound: proB = "I"
+    if not BIfound and BYouFound: proB = "You"
+    if AIfound or BIfound or AYouFound or BYouFound:
+        return {"Pronouns: {0} {1}".format(proA, proB): 1}
+    return {}

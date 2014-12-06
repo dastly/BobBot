@@ -7,13 +7,21 @@ num_utterances = total_utt_length = 0
 num_turns = total_turn_length = 0
 num_turn_pairs = total_turn_pair_diff = 0
 
-def processUtterances(transcript):
+"""
+Processing Utterances and Generating Examples
+"""
+
+# Takes a transcript, and converts the set of utterances into a set of turns.
+# A turn is a set of consecutively spoken utterances by one speaker.
+# This represents one person's turn in a conversation.
+def processUtterances(transcript, restrict_bad_utterances = False):
     global num_utterances, total_utt_length, num_turns, total_turn_length
     turns = []
     turn = []
     utterances = transcript.utterances
     num_utterances += len(utterances)
     for utterance in utterances:
+        if restrict_bad_utterances and utterance.act_tag in ['b', '%', 'x']: continue
         total_utt_length += len(utterance.text_words())
         if len(turn) == 0:
             turn.append(utterance)
@@ -29,6 +37,8 @@ def processUtterances(transcript):
     turns.append(turn)
     return turns
 
+# Positive example = (prompt, response)
+# where prompt and response are two consecutive turns
 def getPosExamples(turns):
     global num_turn_pairs, total_turn_pair_diff
     posExamples = []
@@ -38,7 +48,7 @@ def getPosExamples(turns):
     num_turn_pairs += len(posExamples)
     return posExamples
 
-#Returns true if turn only contains utterances that are backchannels, turn-exits, or noise
+# Returns true if turn only contains utterances that are backchannels, turn-exits, or noise
 def isBadTurn(turn):
     for utt in turn:
         if utt.act_tag not in ["b", "%", "x"]:
@@ -51,21 +61,29 @@ def filterNeg(turnA, turnB):
     if isBadTurn(turnB): return True
     return False
 
-"""
-def getNegExamples(turns):
+# Negative example = (turn, randomTurn)
+# Random pairs give an estimation of what constitutes unlikely conversation
+
+def getNegExamples(turns, restrict_bad_turns = True):
+    if restrict_bad_turns:
+        return getNegExamples_restricted(turns)
+    else:
+        return getNegExamples_unrestricted(turns)
+
+def getNegExamples_unrestricted(turns):
     negExamples = []
     badTurnCount = 0
     for i in range(1, len(turns)):
         randomInt = random.randint(0, len(turns) - 1)
+        # Relies on random to break loop
         while turns[i-1][0].caller == turns[randomInt][0].caller:
             randomInt = random.randint(0, len(turns) - 1)
         negExamples.append(((turns[i-1], turns[randomInt]), -1))
     return negExamples
-"""
 
-#Extension of the original getNegExamples gets rid of badTurns
-#It still adds the same number of negative examples by adding extras at the end
-def getNegExamples(turns):
+# Extension of the original getNegExamples gets rid of badTurns
+# It still adds the same number of negative examples by adding extras at the end
+def getNegExamples_restricted(turns):
     global num_turn_pairs, total_turn_pair_diff
     negExamples = []
     badTurnCount = 0
@@ -74,25 +92,33 @@ def getNegExamples(turns):
             badTurnCount = badTurnCount + 1
             continue
         randomInt = random.randint(0, len(turns) - 1)
+        # Relies on random to break loop
         while filterNeg(turns[i-1], turns[randomInt]) or randomInt == i:
             randomInt = random.randint(0, len(turns) - 1)
         negExamples.append(((turns[i-1], turns[randomInt]), -1))
         total_turn_pair_diff += abs(len(turns[i-1]) - len(turns[randomInt]))
+    # Relies on random to break loop
     while badTurnCount > 0:
         randomInt1 = random.randint(0, len(turns) - 1)
         if isBadTurn(turns[randomInt1]):
             continue
         randomInt2 = random.randint(0, len(turns) - 1)
+        # Relies on random to break loop
         while filterNeg(turns[randomInt1], turns[randomInt2]) or randomInt1 + 1 == randomInt2:
             randomInt2 = random.randint(0, len(turns) - 1)
         negExamples.append(((turns[randomInt1], turns[randomInt2]), -1))
         total_turn_pair_diff += abs(len(turns[randomInt2]) - len(turns[randomInt1]))
         badTurnCount = badTurnCount - 1
-        
     num_turn_pairs += len(negExamples)
     return negExamples
 
+"""
+Print Examples and Statistics
+"""
+
+# Will find and print a TRUE POSITIVE, TRUE NEGATIVE, FALSE POSITIVE, and FALSE NEGATIVE
 def printExamples(examples, weights, featureExtractor):
+    print "Finding Interesting Examples..."
     tpFound = fpFound = tnFound = fnFound = False
     for example in examples:
         phi = featureExtractor(example[0])
@@ -144,6 +170,7 @@ def printExamples(examples, weights, featureExtractor):
         if tpFound and fpFound and tnFound and fnFound:
             break
 
+# Prints a set of turns in conversation format
 def printTurns(turns, print_act_tags = False, num_turns = 0):
     if num_turns == 0:
         num_turns = len(turns)
@@ -158,25 +185,39 @@ def printTurns(turns, print_act_tags = False, num_turns = 0):
                 act_tag = " (" + utt.act_tag + ")"
             print "{0}{1}: {2}".format(speaker, act_tag, utt.text)
 
-def printAvgStats():
+# Prints set of utterances
+def utt_list_to_string(utt_list):
+    return map(lambda utt: reduce(lambda x, y : x + y + ' ', utt.text_words(), "").strip(), utt_list)
+
+# Prints set of candidate responses and the associated scores
+def print_candidates_and_scores(candidates_and_scores):
+    for cand, score in candidates_and_scores:
+        print 'Candidate = {0}, Score = {1}'.format(utt_list_to_string(cand), score)
+
+def printLengthStats():
+    print "Length Statistics..."
     print 'Average Utterance Length = ', float(total_utt_length)/float(num_utterances)
     print 'Average Turn Length = ', float(total_turn_length)/float(num_turns)
     print 'Average Difference in Turn Length in a pair = ', float(total_turn_pair_diff)/float(num_turn_pairs)
-                        
-def printWeightStatistics(weightsIn, NUM_FEATURES = 5):
+
+# Prints most common and least common features (excluding some)                       
+def printWeightStatistics(weightsIn, NUM_FEATURES = 5, ignore_noise = True, ignore_length = True):
+    print "Finding highest and lowest weights..."
     weights = {}
     weightsInv = {}
     for k,v in weightsIn.items():
-        if  "'b'" in k or "'%'" in k or "'x'" in k: continue
+        if ignore_noise and "'b'" in k or "'%'" in k or "'x'" in k: continue
         weights[k] = v
-        if "utt_length" in k: continue
+        if ignore_length and "length" in k: continue
         weightsInv[k] = -v
     c = Counter(weights)
     print c.most_common(NUM_FEATURES)
     c = Counter(weightsInv)
     print c.most_common(NUM_FEATURES)
 
+# Prints count of all act_tags
 def printTagCount(turnSet):
+    print "Finding Tag Counts..."
     c = Counter()
     numUtts = 0
     for discourse in turnSet:
@@ -189,7 +230,9 @@ def printTagCount(turnSet):
         c[item] = round(100.0*c[item]/numUtts, 2)
     print c
 
+# Prints count of different sets of act_tags all from one turn
 def printTagSetCount(turnSet, NUM_MOST_COMMON = 10):
+    print "Finding Tag Set Counts..."
     c = Counter()
     numTurns = 0
     for discourse in turnSet:
@@ -206,6 +249,7 @@ def printTagSetCount(turnSet, NUM_MOST_COMMON = 10):
     print c["sd ; sd ; sd ; "]
     
 def printNumBadTurns(turnSet):
+    print "Finding Bad Turns..."
     badTurnCount = 0
     turnCount = 0
     averageBadTurnDensity = 0
@@ -225,6 +269,7 @@ def printNumBadTurns(turnSet):
     print "AVG BAD TURN DENSITY: {0}".format(1.0 * averageBadTurnDensity / len(turnSet))
 
 def printInterruptionStats(turnSet, NUM_MOST_COMMON = 10):
+    print "Interruption Statistics..."
     backChannelPrevCounter = Counter()
     collabPrevCounter = Counter()
     numInterrupts = 0
@@ -248,20 +293,9 @@ def printInterruptionStats(turnSet, NUM_MOST_COMMON = 10):
     print "Tags Before Collaborative Completion"
     print collabPrevCounter.most_common(NUM_MOST_COMMON)
 
-def chooseFromDistribution(distribution):
-  "Takes a list of (prob, key) pairs and samples"
-  summ = 0
-  for element, score in distribution:
-    summ += score
-  for index, pair in enumerate(distribution):
-      element, score = pair
-      distribution[index] = (element, 1.0 * score / summ)
-
-  r = random.random()
-  base = 0.0
-  for element, prob in distribution:
-    base += prob
-    if r <= base: return (element, prob)
+"""
+File reading for weights vector
+"""
 
 def read_weights_from_file(filename):
     try:
@@ -279,10 +313,3 @@ def save_weights_to_file(filename, weights):
         pass
     with open(filename, 'w') as weights_file:
         weights_file.write(json.dumps(weights))
-
-def utt_list_to_string(utt_list):
-    return map(lambda utt: reduce(lambda x, y : x + y + ' ', utt.text_words(), "").strip(), utt_list)
-        
-def print_candidates_and_scores(candidates_and_scores):
-    for cand, score in candidates_and_scores:
-        print 'Candidate = {0}, Score = {1}'.format(utt_list_to_string(cand), score)
