@@ -42,6 +42,22 @@ def getTranscript_Metadata(get_demo_info):
         transcript_metadata = {'to_caller_birth_year':to_caller_birth_year, 'to_caller_education':to_caller_education, 'to_caller_sex':to_caller_sex, 'to_caller_dialect_area':to_caller_dialect_area, 'from_caller_birth_year':from_caller_birth_year, 'from_caller_education':from_caller_education, 'from_caller_sex':from_caller_sex, 'from_caller_dialect_area':from_caller_dialect_area}
         return transcript_metadata
 
+#returns candidate interruption
+def interrupt(turnA, turns, NUM_CANDIDATES, weights, featureExtractor):
+        candidates = random.sample(turns, min(NUM_CANDIDATES, len(turns)))
+        maxCandidate = candidates[0]
+        maxScore = 0
+        for candidate in candidates:
+            score = 0
+            if candidate[0].act_tag == 'b':
+                score = dotProduct(weights, featureExtractor((turnA, candidate)))
+            if candidate[0].act_tag == '^2':
+                score = dotProduct(weights, featureExtractor((turnA, candidate)))
+            if score > maxScore:
+                    maxScore = score
+                    maxCandidate = candidate
+        return (maxCandidate, maxScore)
+
 def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restrict_bad_turns = True, NUM_CANDIDATES = 100, NUM_START = 6):        
         if not getYesOrNo("Do you want to run the chat bot?"):
                 return False
@@ -77,7 +93,7 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
 
         print "Great.  You may speak several sentences at a time if you wish."
         print "Enter an empty line (just hit ENTER) to have me respond."
-        print "Enter DONE to finish the conversation, or hit ENTER without any other lines."
+        print "Enter hit ENTER without any other lines to exit."
 
         # Junk info to build proper utterance
         # Any info actually used in a feature must be changed
@@ -109,12 +125,27 @@ def swda_chat(weights, featureExtractor, turnSet, restrict_caller = True, restri
                         text = raw_input("YOU: ")
                         if text == "":
                                 break
-                        if text == "DONE":
-                                return True
                         if get_act_tag:
                                 act_tag = raw_input("Act Tag: ")
                         row = [swda_filename, ptb_basename, conversation_no, transcript_index, act_tag, caller, utterance_index, subutterance_index, text, pos, trees, ptb_treenumbers]
                         turnA.append(Utterance(row, transcript_metadata))
+
+                        INTERRUPT_AFTER_LEN = 2
+                        INTERRUPT_PROB = .25
+                        INTERRUPT_THRESHOLD = 5
+                        if len(turnA) > INTERRUPT_AFTER_LEN:
+                            candidate, score = interrupt(turnA, turns, NUM_CANDIDATES, weights, featureExtractor)
+                            # if random.random() < score * INTERRUPT_PROB:
+                            if random.random() < INTERRUPT_PROB and score > INTERRUPT_THRESHOLD:
+                                for utt in candidate:
+                                    print "ME (" + utt.act_tag + "): " + utt.text
+                                print "SCORE"
+                                print score
+                                if isBadTurn(candidate):
+                                    bad_turn_counter += 1
+                                else:
+                                    bad_turn_counter = 0
+                                turnA = []
 
                 if not turnA:
                         return True

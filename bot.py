@@ -27,7 +27,7 @@ from bot_utils import *     #processUtterances, getPosExamples, isBadTrun, getNe
 from actual_chat_bot import swda_chat
 
 weights = trainExamplesPosList = testExamplesPosList = None
-
+ 
 def guessEval(examples):
     global weights
     correct = 0
@@ -187,9 +187,17 @@ def runBot():
     print "Finding Tag Counts..."
     printTagCount(turnSet)
 
+    print "Finding Tag Set Counts..."
+    printTagSetCount(turnSet)
+
     print "Finding Bad Turns..."
     printNumBadTurns(turnSet)
+
+    print "Lenght Statistics..."
     printAvgStats()
+
+    print "Interruption Statistics..."
+    printInterruptionStats(turnSet)
     
     print "Training Predictor..."
     weights = learnPredictor(trainExamples, testExamples, swda_feature_extractor)

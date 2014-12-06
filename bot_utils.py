@@ -1,6 +1,7 @@
 import random
 from util import dotProduct
 from collections import Counter
+from sets import Set
 
 num_utterances = total_utt_length = 0
 num_turns = total_turn_length = 0
@@ -177,11 +178,32 @@ def printWeightStatistics(weightsIn, NUM_FEATURES = 5):
 
 def printTagCount(turnSet):
     c = Counter()
+    numUtts = 0
     for discourse in turnSet:
         for turn in discourse:
             for utt in turn:
                 c[utt.act_tag] += 1
+                numUtts += 1
     print c
+    for item in c:
+        c[item] = round(100.0*c[item]/numUtts, 2)
+    print c
+
+def printTagSetCount(turnSet, NUM_MOST_COMMON = 10):
+    c = Counter()
+    numTurns = 0
+    for discourse in turnSet:
+        for turn in discourse:
+            tagSet = ""
+            for utt in turn:
+                tagSet += utt.act_tag + " ; "
+            c[tagSet] += 1
+            numTurns += 1
+    print c.most_common(NUM_MOST_COMMON)
+    for item in c:
+        c[item] = round(100.0*c[item]/numTurns, 2)
+    print c.most_common(NUM_MOST_COMMON)
+    print c["sd ; sd ; sd ; "]
     
 def printNumBadTurns(turnSet):
     badTurnCount = 0
@@ -202,16 +224,26 @@ def printNumBadTurns(turnSet):
     print "AVG BAD TURN DENSITY: {0}".format(1.0 * badTurnCount / turnCount)
     print "AVG BAD TURN DENSITY: {0}".format(1.0 * averageBadTurnDensity / len(turnSet))
 
-def chooseFromDistribution(distribution):
-  "Takes either a counter or a list of (prob, key) pairs and samples"
-  summ = 0
-  for element, score in distribution:
-    summ += score
-  for element, score, index in enumerate(distribution):
-    distribution[index] = (element, 1.0 * score / summ)
-
-  r = random.random()
-  base = 0.0
-  for element, prob in distribution:
-    base += prob
-    if r <= base: return element
+def printInterruptionStats(turnSet, NUM_MOST_COMMON = 10):
+    backChannelPrevCounter = Counter()
+    collabPrevCounter = Counter()
+    numInterrupts = 0
+    for discourse in turnSet:
+        for i in range(len(discourse)):
+            if i > 0 and discourse[i][0].act_tag == 'b':
+                prevTurn = discourse[i - 1]
+                if prevTurn[len(prevTurn) - 1].text.find("--") > -1:
+                    prevTagList = ""
+                    for utt in prevTurn:
+                        prevTagList += utt.act_tag + " ; "
+                    backChannelPrevCounter[prevTagList] += 1
+            if i > 0 and discourse[i][0].act_tag == '^2':
+                prevTurn = discourse[i - 1]
+                prevTagList = ""
+                for utt in prevTurn:
+                    prevTagList += utt.act_tag + " ; "
+                collabPrevCounter[prevTagList] += 1
+    print "Tags Before Backchannel"
+    print backChannelPrevCounter.most_common(NUM_MOST_COMMON)
+    print "Tags Before Collaborative Completion"
+    print collabPrevCounter.most_common(NUM_MOST_COMMON)
