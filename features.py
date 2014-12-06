@@ -32,6 +32,7 @@ def swda_feature_extractor(x):
         utt_length3,
         utt_length4,
         utt_length5,
+        utt_length_last_2_first_2
 
         # Length is good, but it seems to worsen the actual chatting a bit.
         # This may just be because we tend to type in shorter sentences,
