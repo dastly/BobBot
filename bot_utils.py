@@ -170,7 +170,8 @@ def printExamples(examples, weights, featureExtractor):
             for utt in example[0][1]:
                 print utt.text_words();
             for key in phi:
-                print "{0}: {1}".format(key, weights[key])
+                if key in weights:
+                    print "{0}: {1}".format(key, weights[key])
             fnFound = True
         if tpFound and fpFound and tnFound and fnFound:
             break

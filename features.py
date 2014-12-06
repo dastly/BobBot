@@ -110,7 +110,7 @@ def A_act_tag_list(turnA, turnB):
     return act_tag_list_helper(turnA, 'A')
 
 def A_pos_pairs(turnA, turnB):
-    return pos_pairs_helper(turnA)
+    return pos_pairs_helper(turnA, 'A')
 
 def A_act_tag_pairs(turnA, turnB):
     return act_tag_pairs_helper(turnA, 'A')
