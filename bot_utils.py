@@ -23,7 +23,7 @@ def processUtterances(transcript):
     utterances = transcript.utterances
     num_utterances += len(utterances)
     for utterance in utterances:
-        if restrict_bad_utterances and utterance.act_tag in PRE_PROCESS_NOISE: continue
+        if pre_process_restrict_bad and utterance.act_tag in PRE_PROCESS_NOISE: continue
         total_utt_length += len(utterance.text_words())
         if len(turn) == 0:
             turn.append(utterance)
@@ -67,7 +67,7 @@ def filterNeg(turnA, turnB):
 # Random pairs give an estimation of what constitutes unlikely conversation
 
 def getNegExamples(turns):
-    if restrict_bad_turns:
+    if neg_restrict_bad:
         return getNegExamples_restricted(turns)
     else:
         return getNegExamples_unrestricted(turns)

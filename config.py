@@ -7,15 +7,17 @@ NUM_CANDIDATES = 100
 NUM_START = 6
 
 #For bot_utils
-restrict_bad_utterances = False
-restrict_bad_turns = True
+pre_process_restrict_bad = False
+neg_restrict_bad = True
 PRE_PROCESS_NOISE = ['b', '%', 'x']
 BAD_TURN_NOISE = ['b', '%', 'x']
 
 # For bot
 WEIGHTS_FILENAME = "weights.json"
-TRAIN_SET_SIZE = 1000
-TEST_SET_SIZE = 50 # if 100, may infinite loop (one speaker?)
+TRAIN_SET_SIZE = 750
+TEST_SET_SIZE = 180
+FINAL_TEST_SET_SIZE = 180
+
 RANDOM_SEED = 5
 
 # For SGD
