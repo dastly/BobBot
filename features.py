@@ -19,48 +19,13 @@ def swda_feature_extractor(x):
         act_tag3, ##
         act_tag4, ## 2-4 provide an additional 2% decrease
         act_tag5, ## Like 1-4 combined  Changes from 15/13 to 14/14
-# Step 35: train error = 0.148498982686, test error = 0.138059701493 \\
-# Step 36: train error = 0.148177473224, test error = 0.138059701493 \\
-# Step 37: train error = 0.148398211064, test error = 0.138059701493 \\
-# Step 38: train error = 0.148791700257, test error = 0.141791044776 \\
-# Step 39: train error = 0.147174555645, test error = 0.134328358209 \\
-# Step 40: train error = 0.147865561058, test error = 0.141791044776 \\
-# versus
-# Step 35: train error = 0.152385888134, test error = 0.14552238806 \\
-# Step 36: train error = 0.152006794887, test error = 0.141791044776 \\
-# Step 37: train error = 0.152126761104, test error = 0.14552238806 \\
-# Step 38: train error = 0.152064378671, test error = 0.141791044776 \\
-# Step 39: train error = 0.151464547583, test error = 0.130597014925 \\
-# Step 40: train error = 0.151354178663, test error = 0.134328358209 \\
+
         act_tag_set, ## Another 4%!
         # pronouns, # Adds 3% error
         # short_turn, 
         # gender,
         turn_length,
         turn_length_words, 
-# TEST SIZE 50
-# Step 35: train error = 0.139415140696, test error = 0.10447761194 \\
-# Step 36: train error = 0.139952589351, test error = 0.111940298507 \\
-# Step 37: train error = 0.139362355561, test error = 0.10447761194 \\
-# Step 38: train error = 0.139885408269, test error = 0.0970149253731 \\ !!!
-# Step 39: train error = 0.139779837998, test error = 0.10447761194 \\
-# Step 40: train error = 0.139741448808, test error = 0.111940298507 \\
-# Removing all b%x utterances all together (Not terrible)
-# Step 35: train error = 0.176034892631, test error = 0.1 \\
-# Step 36: train error = 0.178746144325, test error = 0.0833333333333 \\
-# Step 37: train error = 0.176869879565, test error = 0.075 \\
-# Step 38: train error = 0.175504430342, test error = 0.0833333333333 \\
-# Step 39: train error = 0.175455313464, test error = 0.0916666666667 \\
-# Step 40: train error = 0.175062378436, test error = 0.1 \\
-# Allowing all b%x (in Neg too) (terrible)
-# Step 35: train error = 0.342609121271, test error = 0.291044776119 \\
-# Step 36: train error = 0.345435525356, test error = 0.298507462687 \\
-# Step 37: train error = 0.343808783447, test error = 0.313432835821 \\
-# Step 38: train error = 0.345723444278, test error = 0.30223880597 \\
-# Step 39: train error = 0.344322238858, test error = 0.291044776119 \\
-# Step 40: train error = 0.341260700987, test error = 0.294776119403 \\
-# Train Choosing Score: 0.745160664528
-# Test Choosing Score: 0.683510284641
 
         utt_length1,
         utt_length2,
