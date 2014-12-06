@@ -20,7 +20,7 @@ from config import *
 
 def runBot(train_flag): 
 
-    random.seed(RANDOM_SEED)
+    random.seed(5)
     
     trainExamples = []
     trainExamplesPosList = []
@@ -38,6 +38,7 @@ def runBot(train_flag):
         turns = processUtterances(transcript)
         turnSet.append(turns)
         if count < TRAIN_SET_SIZE:
+##        if count >= TRAIN_SET_SIZE and count <  TEST_SET_SIZE + TRAIN_SET_SIZE:
             trainExamplesPos = getPosExamples(turns)   
             trainExamplesNeg = getNegExamples(turns)
             trainExamplesPosList.append(trainExamplesPos)
@@ -46,6 +47,7 @@ def runBot(train_flag):
             trainExamples.extend(trainExamplesNeg)
             count = count + 1
         elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
+##        elif count < TRAIN_SET_SIZE:
             testExamplesPos = getPosExamples(turns)   
             testExamplesNeg = getNegExamples(turns)
             testExamplesPosList.append(testExamplesPos)
