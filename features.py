@@ -38,8 +38,8 @@ def swda_feature_extractor(x):
         # This may just be because we tend to type in shorter sentences,
         # but speak in longer ones.  This discrepency causes issues.
 
-        A_act_tag_list,
-        B_act_tag_list,
+        # A_act_tag_list,
+        # B_act_tag_list,
         # A_act_tag_pairs,
         # B_act_tag_pairs,
         # pos_tags1, # increases error by a few % points

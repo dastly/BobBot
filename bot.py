@@ -20,7 +20,7 @@ from config import *
 
 def runBot(train_flag): 
 
-    random.seed(5)
+    random.seed(RANDOM_SEED)
     
     trainExamples = []
     trainExamplesPosList = []
