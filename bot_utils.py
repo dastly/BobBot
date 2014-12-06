@@ -3,6 +3,8 @@ from util import dotProduct
 from collections import Counter
 from sets import Set
 
+from config import * # restrict_bad_utterances
+
 num_utterances = total_utt_length = 0
 num_turns = total_turn_length = 0
 num_turn_pairs = total_turn_pair_diff = 0
@@ -14,14 +16,14 @@ Processing Utterances and Generating Examples
 # Takes a transcript, and converts the set of utterances into a set of turns.
 # A turn is a set of consecutively spoken utterances by one speaker.
 # This represents one person's turn in a conversation.
-def processUtterances(transcript, restrict_bad_utterances = False):
+def processUtterances(transcript):
     global num_utterances, total_utt_length, num_turns, total_turn_length
     turns = []
     turn = []
     utterances = transcript.utterances
     num_utterances += len(utterances)
     for utterance in utterances:
-        if restrict_bad_utterances and utterance.act_tag in ['b', '%', 'x']: continue
+        if restrict_bad_utterances and utterance.act_tag in PRE_PROCESS_NOISE: continue
         total_utt_length += len(utterance.text_words())
         if len(turn) == 0:
             turn.append(utterance)
@@ -51,7 +53,7 @@ def getPosExamples(turns):
 # Returns true if turn only contains utterances that are backchannels, turn-exits, or noise
 def isBadTurn(turn):
     for utt in turn:
-        if utt.act_tag not in ["b", "%", "x"]:
+        if utt.act_tag not in BAD_TURN_NOISE:
             return False
     return True
 
@@ -64,7 +66,7 @@ def filterNeg(turnA, turnB):
 # Negative example = (turn, randomTurn)
 # Random pairs give an estimation of what constitutes unlikely conversation
 
-def getNegExamples(turns, restrict_bad_turns = True):
+def getNegExamples(turns):
     if restrict_bad_turns:
         return getNegExamples_restricted(turns)
     else:

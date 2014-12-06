@@ -6,6 +6,7 @@ import math
 import sys
 from collections import Counter
 from util import *
+from config import *
 
 def predictor(x, weight):
     if dotProduct(weight, x) <= 0:
@@ -27,15 +28,13 @@ def evaluatePredictor(examples, cache, weight):
 
 def learnPredictor(trainExamples, testExamples, featureExtractor):
     '''
-    COMMENTS FROM HOMEWORK CODE
     Given |trainExamples| and |testExamples| (each one is a list of (x,y)
     pairs), a |featureExtractor| to apply to x, and the number of iterations to
     train |numIters|, return the weight vector (sparse feature vector) learned.
 
     '''
     weight = {}
-    numIters = 40
-    stepSize = .05
+
 
     print "Caching..."
     trainCache = [featureExtractor(example[0]) for example in trainExamples]

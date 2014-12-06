@@ -16,14 +16,11 @@ from bot_utils import *     #processUtterances, getPosExamples, isBadTrun, getNe
 from evaluation import *
 from actual_chat_bot import swda_chat
 
-
-WEIGHTS_FILENAME = "weights.json"
-TRAIN_SET_SIZE = 1000
-TEST_SET_SIZE = 50 # if 100, may infinite loop (one speaker?)
+from config import *
 
 def runBot(train_flag): 
 
-    random.seed(5)
+    random.seed(RANDOM_SEED)
     
     trainExamples = []
     trainExamplesPosList = []

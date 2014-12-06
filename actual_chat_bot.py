@@ -11,18 +11,17 @@ from util import * # dotProduct, chooseFromDistribution
 from bot_utils import * # printTurns, print_candidates_and_scores
 from features import swda_feature_extractor
 
+from config import *
+
+# Global Constants
+# See config.py
+
 # Global variables
 turns = transcript_metadata = None
 get_act_tag = use_specific_discourse = use_distribution = False
 bad_turn_counter = 0
 
-#Global Constants
-INTERRUPT_AFTER_LEN = 2
-INTERRUPT_PROB = .25
-INTERRUPT_THRESHOLD = 5
-BAD_TURN_MAX = 1
-NUM_CANDIDATES = 100
-NUM_START = 6
+
 
 
 def getYesOrNo(prompt):
