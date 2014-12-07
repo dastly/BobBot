@@ -1,15 +1,24 @@
-BobBot
-======
+Rupa Shankar: 05676333
+Dustin Fink: 05650678
 
-Applies SGD with Features to conversations, basically that yeah.
+Final project for CS224N.
 
-Requires nltk:
-http://www.nltk.org/index.html
+#### Requirements
 
-Relevant corpuses:
-switchboard
-nps_chat
+NLTK
 
-#### Getting the SWDA corpus
+#### Setup
 
     python get_swda.py
+
+To download the corpus from http://compprag.christopherpotts.net/code-data/swda.zip
+
+#### FIRST RUN
+
+    python bot.py -t
+
+#### Usage
+
+    python bot.py [-t]
+
+    -t = train the predictor as opposed to reading from the generated weights file. 

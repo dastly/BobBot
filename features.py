@@ -13,17 +13,14 @@ def swda_feature_extractor(x):
 
     features_to_use = [
 
-    # I tried removing all act tag stuff (minus pairwise, and it went to 26%/21%)
-        act_tag, ## Without this, error is back near 50%.  With it, it is around 21%
-        act_tag2, ## 
-        act_tag3, ##
-        act_tag4, ## 2-4 provide an additional 2% decrease
-        act_tag5, ## Like 1-4 combined  Changes from 15/13 to 14/14
+        act_tag, 
+        act_tag2, 
+        act_tag3, 
+        act_tag4, 
+        act_tag5, 
 
-        act_tag_set, ## Another 4%!
-        # pronouns, # Adds 3% error
-        # short_turn, 
-        # gender,
+        act_tag_set,
+
         turn_length,
         turn_length_words, 
 
@@ -34,29 +31,6 @@ def swda_feature_extractor(x):
         utt_length5,
         utt_length_last_2_first_2,
 
-        # Length is good, but it seems to worsen the actual chatting a bit.
-        # This may just be because we tend to type in shorter sentences,
-        # but speak in longer ones.  This discrepency causes issues.
-
-        # A_act_tag_list,
-        # B_act_tag_list,
-        # A_act_tag_pairs,
-        # B_act_tag_pairs,
-        # pos_tags1, # increases error by a few % points
-        # A_pos_pairs,
-        # B_pos_pairs,  # having A and B pos_pairs increased error by 13%
- 
-        ########### CREATE A LOT OF ERROR ###########
-        
-        # A_contains_yes_no_question,
-        # A_contains_declarative_yn_question,
-        # B_is_yes_no_response,
-        # contains_question,
-        # contains_stmt,
-        # contains_acknowledge,
-
-        ############################################
-        # FOR INTERRUPTIONS #
         interruption_features,
 
         A_add_subjects,
