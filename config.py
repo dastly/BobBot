@@ -24,6 +24,3 @@ RANDOM_SEED = 5
 numIters = 40
 stepSize = .05
 dampeningFactor = 1
-# CONVERGENCE_MAX = 0
-# .01 18 steps converged average
-# .01, .95 60 steps converged
