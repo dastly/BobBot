@@ -20,7 +20,7 @@ from config import *
 
 def runBot(train_flag): 
 
-    random.seed(5)
+    random.seed(RANDOM_SEED)
     
     trainExamples = []
     trainExamplesPosList = []
@@ -47,6 +47,8 @@ def runBot(train_flag):
             trainExamples.extend(trainExamplesNeg)
             count = count + 1
         elif count < TEST_SET_SIZE + TRAIN_SET_SIZE:
+            count = count + 1
+        elif count < TEST_SET_SIZE + TRAIN_SET_SIZE + FINAL_TEST_SET_SIZE:
 ##        elif count < TRAIN_SET_SIZE:
             testExamplesPos = getPosExamples(turns)   
             testExamplesNeg = getNegExamples(turns)
@@ -78,6 +80,7 @@ def runBot(train_flag):
     while swda_chat(weights, swda_feature_extractor, turnSet):
         print "Finished a conversation"
 
+    findExampleStats(testExamples, weights, swda_feature_extractor)
     printExamples(testExamples, weights, swda_feature_extractor)
     printWeightStatistics(weights, 5)
 
@@ -93,7 +96,7 @@ def usage():
     
 if __name__ == "__main__":
     opts, args = getopt.getopt(sys.argv[1:], "t", ["train"])
-    train_flag = True
+    train_flag = False
     for opt, arg in opts:
         if opt in ('-t', '--train'):
             train_flag = True

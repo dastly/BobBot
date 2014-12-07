@@ -4,6 +4,7 @@ import random
 import collections
 import math
 import sys
+import pdb
 from collections import Counter
 from util import *
 from config import *
@@ -26,6 +27,25 @@ def evaluatePredictor(examples, cache, weight):
             error += 1
     return 1.0 * error / len(examples)
 
+def converges(weightPrev, weight):
+    # print weight
+    # pdb.set_trace()
+    for key in weight:
+        # print key
+        # print weight[key]
+        # print weightPrev[key]
+        if abs(weightPrev[key] - weight[key]) > CONVERGENCE_MAX:
+            return False
+    return True
+
+def converges_avg(weightPrev, weight):
+    summ = 0
+    for key in weight:
+        summ += abs(weightPrev[key] - weight[key])
+    if 1.0 * summ / len(weight) > CONVERGENCE_MAX:
+            return False
+    return True
+
 def learnPredictor(trainExamples, testExamples, featureExtractor):
     '''
     Given |trainExamples| and |testExamples| (each one is a list of (x,y)
@@ -33,7 +53,11 @@ def learnPredictor(trainExamples, testExamples, featureExtractor):
     train |numIters|, return the weight vector (sparse feature vector) learned.
 
     '''
+
+    global stepSize
+
     weight = {}
+    weightPrev = None
 
 
     print "Caching..."
@@ -53,6 +77,14 @@ def learnPredictor(trainExamples, testExamples, featureExtractor):
                 coef = -1
             increment(weight, -1*stepSize*coef*y,phi)
         trainError = evaluatePredictor(trainExamples, trainCache, weight)
-        devError = evaluatePredictor(testExamples, testCache, weight)
-        print ("Step %d: train error = %s, test error = %s \\\\" % (k + 1, trainError, devError))
+        testError = evaluatePredictor(testExamples, testCache, weight)
+        stepSize = stepSize * dampeningFactor
+        print ("Step %d: train error = %s, test error = %s \\\\" % (k + 1, trainError, testError))
+        # if weightPrev and converges(weightPrev, weight):
+        #     print "Converged"
+        #     break
+        # if weightPrev and converges_avg(weightPrev, weight):
+        #     print "Converged average"
+        #     break
+        weightPrev = dict(weight)
     return weight

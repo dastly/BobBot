@@ -117,15 +117,110 @@ def getNegExamples_restricted(turns):
 """
 Print Examples and Statistics
 """
+def examineQuestions(prompt, response):
+    for utt in prompt:
+        if utt.act_tag in ['qy', 'qw', 'qy^d', 'qo', 'qw^d']:
+            return True
+    return False
+
+def examineNoise(prompt, response):
+    for utt in response:
+        if utt.act_tag in ['b', '%', 'x']:
+            return True
+    return False
+
+def examineCollab(prompt, response):
+    for utt in response:
+        if utt.act_tag in ['^2']:
+            return True
+    return False
+
+def examineAgreement(prompt, response):
+    for utt in response:
+        if utt.act_tag in ['aa']:
+            return True
+    return False
+
+def examineHedge(prompt, response):
+    for utt in prompt:
+        if utt.act_tag in ['h']:
+            return True
+    return False
+def examineOpening(prompt, response):
+    for utt in prompt:
+        if utt.act_tag in ['fp']:
+            return True
+    return False
+def examineClosing(prompt, response):
+    for utt in prompt:
+        if utt.act_tag in ['fc']:
+            return True
+    return False
+def examineClosingResponse(prompt, response):
+    for utt in response:
+        if utt.act_tag in ['fc']:
+            return True
+    return False
+
+def findExampleStats(examples, weights, featureExtractor):
+    print "Finding Question Prompt Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineQuestions)
+    print "Finding Noise Response Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineNoise)
+    print "Finding Collab Response Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineCollab)
+    print "Finding Agreement Response Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineAgreement)
+    print "Finding Hedge Prompt Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineHedge)
+    print "Finding Conventional Opening Prompt Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineOpening)
+    print "Finding Conventional Closing Prompt Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineClosing)
+    print "Finding Conventional Closing Response Stats..."
+    findExampleStatsFn(examples, weights, featureExtractor, examineClosingResponse)
+
+def findExampleStatsFn(examples, weights, featureExtractor, examineFn):
+    summ = 0
+    correct = 0
+    tot = 0
+    summNeg = 0
+    correctNeg = 0
+    totNeg = 0
+    for example in examples:
+        prompt, response = example[0]
+        if examineFn(prompt, response):
+            phi = featureExtractor(example[0])
+            score = dotProduct(weights, phi)
+            if example[1] == 1:
+                    summ += score
+                    if score > 0:
+                        correct += 1
+                    tot += 1
+            if example[1] == -1:
+                    summNeg += score
+                    if score < 0:
+                        correctNeg += 1
+                    totNeg += 1
+    if tot > 0:
+        print "Average Score (+): {0}".format(1.0*summ/tot)
+        print "Average Correct (+): {0}".format(1.0*correct/tot)
+    if totNeg > 0:
+        print "Average Score (-): {0}".format(1.0*summNeg/totNeg)
+        print "Average Correct (-): {0}".format(1.0*correctNeg/totNeg)
+
 
 # Will find and print a TRUE POSITIVE, TRUE NEGATIVE, FALSE POSITIVE, and FALSE NEGATIVE
 def printExamples(examples, weights, featureExtractor):
+    # random.jumpahead(1)
+    # random.shuffle(examples)
+    SCORE_THRESHOLD = .5
     print "Finding Interesting Examples..."
     tpFound = fpFound = tnFound = fnFound = False
     for example in examples:
         phi = featureExtractor(example[0])
         score = dotProduct(weights, phi)
-        if not tpFound and score > .5 and example[1] == 1:
+        if not tpFound and score > SCORE_THRESHOLD and example[1] == 1:
             print "FOUND: True Positive"
             print "Prompt"
             for utt in example[0][0]:
@@ -137,7 +232,7 @@ def printExamples(examples, weights, featureExtractor):
                 if key in weights:
                     print "{0}: {1}".format(key, weights[key])
             tpFound = True
-        if not fpFound and score > -.5 and example[1] == -1:
+        if not fpFound and score > SCORE_THRESHOLD and example[1] == -1:
             print "FOUND: False Positive"
             print "Prompt"
             for utt in example[0][0]:
@@ -149,7 +244,7 @@ def printExamples(examples, weights, featureExtractor):
                 if key in weights:
                     print "{0}: {1}".format(key, weights[key])
             fpFound = True
-        if not tnFound and score < -.5 and example[1] == -1:
+        if not tnFound and score < -SCORE_THRESHOLD and example[1] == -1:
             print "FOUND: True Negative"
             print "Prompt"
             for utt in example[0][0]:
@@ -161,7 +256,7 @@ def printExamples(examples, weights, featureExtractor):
                 if key in weights:
                     print "{0}: {1}".format(key, weights[key])
             tnFound = True
-        if not fnFound and score < -.5 and example[1] == 1:
+        if not fnFound and score < -SCORE_THRESHOLD and example[1] == 1:
             print "FOUND: False Negative"
             print "Prompt"
             for utt in example[0][0]:
@@ -207,18 +302,69 @@ def printLengthStats():
     print 'Average Difference in Turn Length in a pair = ', float(total_turn_pair_diff)/float(num_turn_pairs)
 
 # Prints most common and least common features (excluding some)                       
-def printWeightStatistics(weightsIn, NUM_FEATURES = 5, ignore_noise = True, ignore_length = True):
+def printWeightStatistics(weightsIn, NUM_FEATURES = 5):
     print "Finding highest and lowest weights..."
-    weights = {}
-    weightsInv = {}
+    length_weights = {}
+    length_weightsInv = {}
+    act_tag_weights = {}
+    act_tag_weightsInv = {}
+    noise_weights = {}
+    noise_weightsInv = {}
+    pairwise_weights = {}
+    pairwise_weightsInv = {}
+    subject_weights = {}
+    subject_weightsInv = {}
+    interruption_weights = {}
+    interruption_weightsInv = {}
     for k,v in weightsIn.items():
-        if ignore_noise and "'b'" in k or "'%'" in k or "'x'" in k: continue
-        weights[k] = v
-        if ignore_length and "length" in k: continue
-        weightsInv[k] = -v
-    c = Counter(weights)
+        v = round(v, 2)
+        if "'b'" in k or "'%'" in k or "'x'" in k:
+            noise_weights[k] = v
+            noise_weightsInv[k] = -v
+        elif "interruption" in k or "pre" in k:
+            interruption_weights[k] = v
+            interruption_weightsInv[k] = -v
+        elif "length" in k or "Last" in k:
+            length_weights[k] = v
+            length_weightsInv[k] = -v
+        elif "Tag" in k or "tag" in k:
+            act_tag_weights[k] = v
+            act_tag_weightsInv[k] = -v
+        elif "subject" in k:
+            subject_weights[k] = v
+            subject_weightsInv[k] = -v
+        else:
+            pairwise_weights[k] = v
+            pairwise_weightsInv[k] = -v
+    print "noise_"
+    c = Counter(noise_weights)
     print c.most_common(NUM_FEATURES)
-    c = Counter(weightsInv)
+    c = Counter(noise_weightsInv)
+    print c.most_common(NUM_FEATURES)
+    print "length_"
+    c = Counter(length_weights)
+    print c.most_common(NUM_FEATURES)
+    c = Counter(length_weightsInv)
+    print c.most_common(NUM_FEATURES)
+    print "act_tag_"
+    c = Counter(act_tag_weights)
+    print c.most_common(NUM_FEATURES)
+    c = Counter(act_tag_weightsInv)
+    print c.most_common(NUM_FEATURES)
+    print "interruption_"
+    c = Counter(interruption_weights)
+    print c.most_common(NUM_FEATURES)
+    c = Counter(interruption_weightsInv)
+    print c.most_common(NUM_FEATURES)
+    print "subject_"
+    c = Counter(subject_weights)
+    print c.most_common(NUM_FEATURES)
+    c = Counter(subject_weightsInv)
+    print c.most_common(NUM_FEATURES)
+    print "other_"
+    c = Counter(pairwise_weights)
+    print c.most_common(NUM_FEATURES)
+    c = Counter(pairwise_weightsInv)
     print c.most_common(NUM_FEATURES)
 
 # Prints count of all act_tags

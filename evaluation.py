@@ -1,7 +1,7 @@
 import random, collections, math, sys, getopt, pdb
 from util import dotProduct
 from features import swda_feature_extractor
-from bot_utils import *     #processUtterances, getPosExamples, isBadTrun, getNegExamples, printExamples
+from bot_utils import *     #processUtterances, getPosExamples, isBadTurn, getNegExamples, printExamples
 
 from config import *
 
@@ -26,7 +26,7 @@ def chooseEval(examples, weights):
         randomInt = random.randint(0, len(examples)-1)
         response2 = examples[randomInt][0][1]
         # Relies on random to break loop
-        while response1 == response2 or (neg_restrict_bad and isBadTrun(response2)) or response1[0].caller == response2[0].caller:
+        while response1 == response2 or (neg_restrict_bad and isBadTurn(response2)) or response1[0].caller == response2[0].caller:
             randomInt = random.randint(0, len(examples)-1)
             response2 = examples[randomInt][0][1]
         guess1 = (prompt, response1)
@@ -52,6 +52,8 @@ def guessEval(examples, weights):
         maxResponse = examples[0][0][1]
         for j in range(len(examples)):
             response = examples[j][0][1]
+            if prompt[0].caller == response[0].caller:
+                continue
             guess = (prompt, response)
             phi = swda_feature_extractor(guess)
             score = dotProduct(weights, phi)
