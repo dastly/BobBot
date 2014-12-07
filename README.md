@@ -11,7 +11,7 @@ NLTK
 
     python get_swda.py
 
-To download the corpus.
+To download the corpus from http://compprag.christopherpotts.net/code-data/swda.zip
 
 #### FIRST RUN
 
