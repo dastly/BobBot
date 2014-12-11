@@ -80,8 +80,12 @@ def runBot(train_flag):
     while swda_chat(weights, swda_feature_extractor, turnSet):
         print "Finished a conversation"
 
-    findExampleStats(testExamples, weights, swda_feature_extractor)
-    printExamples(testExamples, weights, swda_feature_extractor)
+##    findExampleStats(testExamples, weights, swda_feature_extractor)
+    while True:
+        threshold = raw_input("Threshold: ")
+        if threshold == "":
+            break
+        printExamples(testExamples, weights, swda_feature_extractor, float(threshold))
     printWeightStatistics(weights, 5)
 
     print "Evaluating Bot..."

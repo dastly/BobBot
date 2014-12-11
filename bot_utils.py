@@ -211,13 +211,15 @@ def findExampleStatsFn(examples, weights, featureExtractor, examineFn):
 
 
 # Will find and print a TRUE POSITIVE, TRUE NEGATIVE, FALSE POSITIVE, and FALSE NEGATIVE
-def printExamples(examples, weights, featureExtractor):
+def printExamples(examples, weights, featureExtractor, SCORE_THRESHOLD):
     # random.jumpahead(1)
-    # random.shuffle(examples)
-    SCORE_THRESHOLD = .5
+    random.shuffle(examples)
+    # SCORE_THRESHOLD = .5
     print "Finding Interesting Examples..."
     tpFound = fpFound = tnFound = fnFound = False
     for example in examples:
+        prompt, response = example[0]
+        if not examineCollab(prompt, response) : continue
         phi = featureExtractor(example[0])
         score = dotProduct(weights, phi)
         if not tpFound and score > SCORE_THRESHOLD and example[1] == 1:
